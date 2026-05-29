@@ -167,9 +167,7 @@ func ReadObjectFromDisk(path string, ptr any) error {
 		return err
 	}
 
-	UnmarshalData(data, ptr)
-
-	return nil
+	return UnmarshalData(data, ptr)
 }
 
 func ReadStringFromFile(path string) (string, error) {

@@ -45,8 +45,9 @@ func TestUnmarshalDataJSON(t *testing.T) {
 	data := []byte(`{"name": "json", "value": 123}`)
 	var obj SampleStruct
 
-	UnmarshalData(data, &obj)
+	err := UnmarshalData(data, &obj)
 
+	assert.NoError(t, err)
 	assert.Equal(t, "json", obj.Name)
 	assert.Equal(t, 123, obj.Value)
 }
@@ -56,8 +57,20 @@ func TestUnmarshalDataYAML(t *testing.T) {
 	data := []byte("name: yaml\nvalue: 456")
 	var obj SampleStruct
 
-	UnmarshalData(data, &obj)
+	err := UnmarshalData(data, &obj)
 
+	assert.NoError(t, err)
 	assert.Equal(t, "yaml", obj.Name)
 	assert.Equal(t, 456, obj.Value)
+}
+
+// TestUnmarshalDataInvalid verifies that malformed data which is neither valid
+// JSON nor valid YAML returns an error instead of terminating the process.
+func TestUnmarshalDataInvalid(t *testing.T) {
+	data := []byte(`"unterminated`)
+	var obj SampleStruct
+
+	err := UnmarshalData(data, &obj)
+
+	assert.Error(t, err)
 }

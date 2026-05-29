@@ -171,6 +171,14 @@ type Project struct {
 	// AccessControl defines fine-grained permission levels for the project.
 	// Not supported for import operations.
 	AccessControl ProjectAccessControl `json:"accessControl"`
+
+	// ReferencedComponentHashes lists components that the project references
+	// but does not contain, each paired with a content hash the platform uses
+	// to validate the reference during import. It is modeled as a slice of maps
+	// rather than a typed struct so that every platform-provided field is
+	// preserved on round-trip. Omitted from the payload when the project has no
+	// referenced components, matching the platform's UI export.
+	ReferencedComponentHashes []map[string]interface{} `json:"referencedComponentHashes,omitempty"`
 }
 
 // Import returns a map representation of the Project suitable for importing.
@@ -184,7 +192,7 @@ func (p Project) Import() map[string]interface{} {
 	logging.Trace()
 
 	// Pre-allocate map with exact capacity to avoid reallocations
-	result := make(map[string]interface{}, 11)
+	result := make(map[string]interface{}, 13)
 
 	result["_id"] = p.Id
 	result["name"] = p.Name
@@ -198,6 +206,13 @@ func (p Project) Import() map[string]interface{} {
 	result["lastUpdated"] = p.LastUpdated
 	result["lastUpdatedBy"] = p.LastUpdatedBy
 	result["thumbnail"] = p.Thumbnail
+
+	// Preserve referenced component hashes so the platform can validate
+	// externally referenced components on import. Only include the key when
+	// present to avoid sending a null value for projects without references.
+	if len(p.ReferencedComponentHashes) > 0 {
+		result["referencedComponentHashes"] = p.ReferencedComponentHashes
+	}
 
 	return result
 }

@@ -5,6 +5,7 @@
 package services
 
 import (
+	"encoding/json"
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -228,7 +229,63 @@ func TestProjectsExportPreservesReferencedHashes(t *testing.T) {
 			assert.NotNil(t, c.Document)
 			assert.NotEmpty(t, c.Document["name"])
 		}
+
+		// The folders tree mixes folder nodes and component leaf nodes; both
+		// must re-encode exactly as the platform produced them.
+		assert.Equal(t, 3, len(res.Folders))
+
+		b, err := json.Marshal(res.Folders[2])
+		assert.Nil(t, err)
+		assert.JSONEq(t, `{"nodeType": "component", "iid": 7}`, string(b))
 	}
+}
+
+// TestProjectFolderRoundTrip verifies that the heterogeneous folders tree
+// survives a decode/encode cycle unchanged. Component leaf nodes consist of
+// exactly nodeType and iid; re-encoding must not add name or children fields,
+// which the platform's import endpoint rejects.
+func TestProjectFolderRoundTrip(t *testing.T) {
+	in := `{
+		"iid": 1,
+		"name": "Workflows",
+		"nodeType": "folder",
+		"children": [
+			{"nodeType": "component", "iid": 4}
+		]
+	}`
+
+	var folder ProjectFolder
+	assert.NoError(t, json.Unmarshal([]byte(in), &folder))
+
+	assert.Equal(t, "Workflows", folder.Name)
+	assert.Equal(t, 1, len(folder.Children))
+	assert.Equal(t, "component", folder.Children[0].NodeType)
+	assert.Equal(t, 4, folder.Children[0].Iid)
+
+	out, err := json.Marshal(folder)
+	assert.NoError(t, err)
+	assert.JSONEq(t, in, string(out))
+}
+
+// TestProjectFolderComponentNodeOmitsEmptyFields verifies that a component
+// node decoded from platform output re-encodes without the name and children
+// keys that the typed struct would otherwise emit as "" and null.
+func TestProjectFolderComponentNodeOmitsEmptyFields(t *testing.T) {
+	var node ProjectFolder
+	assert.NoError(t, json.Unmarshal([]byte(`{"nodeType": "component", "iid": 0}`), &node))
+
+	out, err := json.Marshal(node)
+	assert.NoError(t, err)
+
+	var m map[string]interface{}
+	assert.NoError(t, json.Unmarshal(out, &m))
+
+	_, hasName := m["name"]
+	_, hasChildren := m["children"]
+	assert.False(t, hasName)
+	assert.False(t, hasChildren)
+	assert.Equal(t, "component", m["nodeType"])
+	assert.Equal(t, float64(0), m["iid"])
 }
 
 func TestProjectsExportError(t *testing.T) {

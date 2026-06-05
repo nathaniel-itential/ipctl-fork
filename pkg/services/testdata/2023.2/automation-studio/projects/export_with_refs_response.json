@@ -43,13 +43,22 @@
         "iid": 1,
         "name": "Child Workflows",
         "nodeType": "folder",
-        "children": []
+        "children": [
+          {
+            "nodeType": "component",
+            "iid": 4
+          }
+        ]
       },
       {
         "iid": 2,
         "name": "Transformations",
         "nodeType": "folder",
         "children": []
+      },
+      {
+        "nodeType": "component",
+        "iid": 7
       }
     ],
     "createdBy": {

@@ -5,6 +5,7 @@
 package services
 
 import (
+	"encoding/json"
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -15,10 +16,11 @@ import (
 )
 
 var (
-	projectsGetAllSuccess = "automation-studio/projects/getall_response.json"
-	projectsGetSuccess    = "automation-studio/projects/get_response.json"
-	projectsCreateSuccess = "automation-studio/projects/create_response.json"
-	projectsExportSuccess = "automation-studio/projects/export_response.json"
+	projectsGetAllSuccess  = "automation-studio/projects/getall_response.json"
+	projectsGetSuccess     = "automation-studio/projects/get_response.json"
+	projectsCreateSuccess  = "automation-studio/projects/create_response.json"
+	projectsExportSuccess  = "automation-studio/projects/export_response.json"
+	projectsExportWithRefs = "automation-studio/projects/export_with_refs_response.json"
 )
 
 func setupProjectService() *ProjectService {
@@ -196,6 +198,96 @@ func TestProjectsExport(t *testing.T) {
 	}
 }
 
+// TestProjectsExportPreservesReferencedHashes verifies that fields the
+// platform returns from the export endpoint but that are not otherwise core to
+// the project (notably referencedComponentHashes) survive decoding and are not
+// silently dropped, and that inline component documents are preserved.
+func TestProjectsExportPreservesReferencedHashes(t *testing.T) {
+	svc := setupProjectService()
+	defer testlib.Teardown()
+
+	for _, ele := range fixtureSuites {
+		response := testlib.Fixture(
+			filepath.Join(fixtureRoot, ele, projectsExportWithRefs),
+		)
+
+		testlib.AddGetResponseToMux("/automation-studio/projects/670d8dac113f9679380359de/export", response, 0)
+
+		res, err := svc.Export("670d8dac113f9679380359de")
+
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, "TestProject", res.Name)
+
+		// referencedComponentHashes must be preserved through the typed decode.
+		assert.Equal(t, 2, len(res.ReferencedComponentHashes))
+		assert.Equal(t, "Standard Output", res.ReferencedComponentHashes[0]["name"])
+
+		// Inline component documents must be preserved.
+		assert.Equal(t, 2, len(res.Components))
+		for _, c := range res.Components {
+			assert.NotNil(t, c.Document)
+			assert.NotEmpty(t, c.Document["name"])
+		}
+
+		// The folders tree mixes folder nodes and component leaf nodes; both
+		// must re-encode exactly as the platform produced them.
+		assert.Equal(t, 3, len(res.Folders))
+
+		b, err := json.Marshal(res.Folders[2])
+		assert.Nil(t, err)
+		assert.JSONEq(t, `{"nodeType": "component", "iid": 7}`, string(b))
+	}
+}
+
+// TestProjectFolderRoundTrip verifies that the heterogeneous folders tree
+// survives a decode/encode cycle unchanged. Component leaf nodes consist of
+// exactly nodeType and iid; re-encoding must not add name or children fields,
+// which the platform's import endpoint rejects.
+func TestProjectFolderRoundTrip(t *testing.T) {
+	in := `{
+		"iid": 1,
+		"name": "Workflows",
+		"nodeType": "folder",
+		"children": [
+			{"nodeType": "component", "iid": 4}
+		]
+	}`
+
+	var folder ProjectFolder
+	assert.NoError(t, json.Unmarshal([]byte(in), &folder))
+
+	assert.Equal(t, "Workflows", folder.Name)
+	assert.Equal(t, 1, len(folder.Children))
+	assert.Equal(t, "component", folder.Children[0].NodeType)
+	assert.Equal(t, 4, folder.Children[0].Iid)
+
+	out, err := json.Marshal(folder)
+	assert.NoError(t, err)
+	assert.JSONEq(t, in, string(out))
+}
+
+// TestProjectFolderComponentNodeOmitsEmptyFields verifies that a component
+// node decoded from platform output re-encodes without the name and children
+// keys that the typed struct would otherwise emit as "" and null.
+func TestProjectFolderComponentNodeOmitsEmptyFields(t *testing.T) {
+	var node ProjectFolder
+	assert.NoError(t, json.Unmarshal([]byte(`{"nodeType": "component", "iid": 0}`), &node))
+
+	out, err := json.Marshal(node)
+	assert.NoError(t, err)
+
+	var m map[string]interface{}
+	assert.NoError(t, json.Unmarshal(out, &m))
+
+	_, hasName := m["name"]
+	_, hasChildren := m["children"]
+	assert.False(t, hasName)
+	assert.False(t, hasChildren)
+	assert.Equal(t, "component", m["nodeType"])
+	assert.Equal(t, float64(0), m["iid"])
+}
+
 func TestProjectsExportError(t *testing.T) {
 	svc := setupProjectService()
 	defer testlib.Teardown()
@@ -245,4 +337,29 @@ func TestProjectImportMethod(t *testing.T) {
 	assert.False(t, hasComponentIidIndex)
 	assert.False(t, hasMembers)
 	assert.False(t, hasAccessControl)
+
+	// referencedComponentHashes is omitted when the project has none, so that
+	// a null value is never sent to the import endpoint.
+	_, hasRefHashes := result["referencedComponentHashes"]
+	assert.False(t, hasRefHashes)
+}
+
+// TestProjectImportMethodIncludesReferencedHashes verifies that
+// referencedComponentHashes are carried into the import payload when present,
+// so the platform can validate externally referenced components.
+func TestProjectImportMethodIncludesReferencedHashes(t *testing.T) {
+	project := Project{
+		Id:   "test-id",
+		Name: "TestProject",
+		ReferencedComponentHashes: []map[string]interface{}{
+			{"type": "transformation", "reference": "abc", "name": "Standard Output", "hash": "deadbeef"},
+		},
+	}
+
+	result := project.Import()
+
+	hashes, ok := result["referencedComponentHashes"].([]map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, 1, len(hashes))
+	assert.Equal(t, "Standard Output", hashes[0]["name"])
 }

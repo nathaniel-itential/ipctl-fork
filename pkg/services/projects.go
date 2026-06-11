@@ -5,6 +5,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -51,20 +52,59 @@ type ProjectComponent struct {
 	Document map[string]interface{} `json:"document"`
 }
 
-// ProjectFolder represents a folder node in the project's hierarchical structure.
-// Folders organize components and can contain nested folders, forming a tree structure.
+// ProjectFolder represents a node in the project's hierarchical folder structure.
+// The tree is heterogeneous: folder nodes carry a name and a children array,
+// while component leaf nodes consist of exactly {"nodeType": "component",
+// "iid": <int>}. The platform's import endpoint validates component nodes
+// strictly and rejects them when extra properties (such as a null children or
+// an empty name) are present, so each node preserves its raw JSON on decode
+// and emits it verbatim on encode to guarantee a lossless round-trip.
 type ProjectFolder struct {
-	// Iid is the internal integer identifier for the folder.
+	// Iid is the internal integer identifier for the node.
 	Iid int `json:"iid"`
 
-	// Name is the display name of the folder.
+	// Name is the display name of the folder. Empty for component nodes.
 	Name string `json:"name"`
 
-	// NodeType identifies the type of node (typically "folder").
+	// NodeType identifies the type of node ("folder" or "component").
 	NodeType string `json:"nodeType"`
 
-	// Children contains nested folders within this folder, forming a recursive structure.
+	// Children contains nested nodes within this folder, forming a recursive
+	// structure. Absent for component nodes.
 	Children []ProjectFolder `json:"children"`
+
+	// raw holds the node exactly as it appeared in the source JSON so that
+	// re-encoding does not add fields the platform rejects on import.
+	raw json.RawMessage
+}
+
+// UnmarshalJSON decodes the typed fields and retains the original JSON so the
+// node can be re-encoded without alteration.
+func (f *ProjectFolder) UnmarshalJSON(data []byte) error {
+	type alias ProjectFolder
+
+	var a alias
+	if err := json.Unmarshal(data, &a); err != nil {
+		return err
+	}
+
+	*f = ProjectFolder(a)
+	f.raw = append(json.RawMessage(nil), data...)
+
+	return nil
+}
+
+// MarshalJSON emits the original JSON captured during decoding when available,
+// preserving the exact node shape the platform produced. Nodes constructed in
+// code fall back to the typed fields.
+func (f ProjectFolder) MarshalJSON() ([]byte, error) {
+	if f.raw != nil {
+		return f.raw, nil
+	}
+
+	type alias ProjectFolder
+
+	return json.Marshal(alias(f))
 }
 
 // ProjectOperation represents the response structure for project API operations
@@ -171,6 +211,14 @@ type Project struct {
 	// AccessControl defines fine-grained permission levels for the project.
 	// Not supported for import operations.
 	AccessControl ProjectAccessControl `json:"accessControl"`
+
+	// ReferencedComponentHashes lists components that the project references
+	// but does not contain, each paired with a content hash the platform uses
+	// to validate the reference during import. It is modeled as a slice of maps
+	// rather than a typed struct so that every platform-provided field is
+	// preserved on round-trip. Omitted from the payload when the project has no
+	// referenced components, matching the platform's UI export.
+	ReferencedComponentHashes []map[string]interface{} `json:"referencedComponentHashes,omitempty"`
 }
 
 // Import returns a map representation of the Project suitable for importing.
@@ -184,7 +232,7 @@ func (p Project) Import() map[string]interface{} {
 	logging.Trace()
 
 	// Pre-allocate map with exact capacity to avoid reallocations
-	result := make(map[string]interface{}, 11)
+	result := make(map[string]interface{}, 13)
 
 	result["_id"] = p.Id
 	result["name"] = p.Name
@@ -198,6 +246,13 @@ func (p Project) Import() map[string]interface{} {
 	result["lastUpdated"] = p.LastUpdated
 	result["lastUpdatedBy"] = p.LastUpdatedBy
 	result["thumbnail"] = p.Thumbnail
+
+	// Preserve referenced component hashes so the platform can validate
+	// externally referenced components on import. Only include the key when
+	// present to avoid sending a null value for projects without references.
+	if len(p.ReferencedComponentHashes) > 0 {
+		result["referencedComponentHashes"] = p.ReferencedComponentHashes
+	}
 
 	return result
 }

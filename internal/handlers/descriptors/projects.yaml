@@ -135,6 +135,13 @@ import:
     The import command will import a project into Itential Platform.  If the
     project name already exists this command will return an error.
 
+    A project exported in expanded form (see `export project --expand`) stores
+    each component in its own file alongside the main project file.  When
+    importing an expanded project, point this command at the main
+    `*.project.json` file and keep its component files in place; `ipctl` will
+    reconstruct the documents before import.  Importing an expanded project
+    file without its component files will return an error.
+
     When importing a project into Itential Platform, the owner of the project
     will be based on the credentials used to authenticate the `ipctl` client.
     Additional members can be added to the project on import.
@@ -160,3 +167,23 @@ export:
 
   description: |
     Export a project.
+
+    By default the project is written to a single `*.project.json` file with
+    every component document embedded inline.  This file matches the format
+    produced by the platform's UI export and can be imported directly into
+    Itential Platform.
+
+    Use the `--expand` option to write each component document to its own file
+    within a folder structure that mirrors the project, leaving the main
+    `*.project.json` file as a manifest that references those files by name.
+    This layout is convenient for storing a project in source control, but the
+    main file is NOT directly importable by the platform on its own.  An
+    expanded project must be re-imported with `ipctl import`, which
+    reconstructs the documents from the component files.
+
+  example: |
+    # Export a project to a single, directly importable file
+    $ ipctl export project "cli test"
+
+    # Export a project as separate component files for source control
+    $ ipctl export project "cli test" --expand

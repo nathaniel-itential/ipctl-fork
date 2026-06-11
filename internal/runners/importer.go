@@ -53,9 +53,7 @@ func importLoadFromDisk(path string, ptr any) error {
 		return err
 	}
 
-	utils.UnmarshalData(b, ptr)
-
-	return nil
+	return utils.UnmarshalData(b, ptr)
 }
 
 // This function accepts a single required argument which is the incoming

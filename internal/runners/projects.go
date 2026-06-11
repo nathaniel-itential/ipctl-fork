@@ -536,10 +536,13 @@ func (r *ProjectRunner) Export(in Request) (*Response, error) {
 			return nil, err
 		}
 
-		// NOTE (privateip) need to remove these fields to comply with the same
-		// export format returned from the UI
+		// Remove server-managed fields so the exported file matches the format
+		// produced by the platform's UI export and imports cleanly: members and
+		// accessControl are managed separately, and componentIidIndex is
+		// re-derived by the server on import.
 		delete(exported, "members")
 		delete(exported, "accessControl")
+		delete(exported, "componentIidIndex")
 
 		fn := fmt.Sprintf("%s.project.json", strings.Replace(name, "/", "_", -1))
 
@@ -637,13 +640,16 @@ func (r *ProjectRunner) importProject(project services.Project, path string, rep
 
 		doc, err := os.ReadFile(fp)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf(
+				"failed to read component file %q for component %q: an expanded project must be imported together with its component files: %w",
+				fp, ele.Reference, err,
+			)
 		}
 
 		var document map[string]interface{}
-		// NOTE: UnmarshalData calls logging.Fatal() on error instead of returning error
-		// See CLAUDE.md for details - this is a known issue that should be refactored
-		utils.UnmarshalData(doc, &document)
+		if err := utils.UnmarshalData(doc, &document); err != nil {
+			return nil, fmt.Errorf("failed to parse component file %q: %w", fp, err)
+		}
 
 		project.Components[idx].Document = document
 	}
@@ -925,7 +931,11 @@ func parseMember(member string) (*Member, error) {
 // Side effects:
 //   - Creates folder structure on disk matching project.Folders
 //   - Writes multiple JSON files (one per component plus main project file)
-//   - Removes "members" and "accessControl" fields for UI compatibility
+//   - Removes "members", "accessControl", and "componentIidIndex" fields
+//
+// The resulting main project file references component documents by filename
+// rather than embedding them, so it is only importable via `ipctl import`
+// (which reconstructs the documents), not by the platform's manual import.
 //
 // TODO: This function should be moved to the resource layer (pkg/resources/projects.go)
 // as it contains business logic about project structure and serialization format.
@@ -943,10 +953,15 @@ func expandProject(in Request, project *services.Project, path string) error {
 		return err
 	}
 
-	// NOTE (privateip) need to remove these fields to comply with the same
-	// export format returned from the UI
+	// Remove server-managed fields, mirroring the standard export. Unlike the
+	// standard export, the expanded layout is an ipctl-specific format: each
+	// component's document is written to its own file and referenced by
+	// filename, so this main project file is NOT directly importable by the
+	// platform. It must be re-imported with `ipctl import`, which reconstructs
+	// the documents from the component files.
 	delete(projectMap, "members")
 	delete(projectMap, "accessControl")
+	delete(projectMap, "componentIidIndex")
 
 	components := projectMap["components"].([]interface{})
 

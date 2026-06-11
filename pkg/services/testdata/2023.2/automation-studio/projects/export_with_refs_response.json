@@ -1,0 +1,102 @@
+{
+  "message": "Project exported successfully",
+  "data": {
+    "_id": "670d8dac113f9679380359de",
+    "name": "TestProject",
+    "backgroundColor": "#4a90d9",
+    "description": "",
+    "components": [
+      {
+        "iid": 4,
+        "type": "workflow",
+        "folder": "/Child Workflows",
+        "reference": "42a13b74-a1af-4e7a-8fce-7cf3f969098c",
+        "document": {
+          "name": "Sample Child Workflow",
+          "type": "automation",
+          "tasks": {
+            "workflow_start": {
+              "name": "workflow_start",
+              "type": "operation"
+            }
+          },
+          "transitions": {},
+          "inputSchema": {},
+          "outputSchema": {},
+          "font_size": 12
+        }
+      },
+      {
+        "iid": 7,
+        "type": "transformation",
+        "folder": "/Transformations",
+        "reference": "682cc22f18f0da60316bbd55",
+        "document": {
+          "name": "Sample Transformation",
+          "incoming": [],
+          "outgoing": []
+        }
+      }
+    ],
+    "folders": [
+      {
+        "iid": 1,
+        "name": "Child Workflows",
+        "nodeType": "folder",
+        "children": [
+          {
+            "nodeType": "component",
+            "iid": 4
+          }
+        ]
+      },
+      {
+        "iid": 2,
+        "name": "Transformations",
+        "nodeType": "folder",
+        "children": []
+      },
+      {
+        "nodeType": "component",
+        "iid": 7
+      }
+    ],
+    "createdBy": {
+      "_id": "687f5c87f929ec8c77f00695",
+      "provenance": "AD",
+      "username": "016662"
+    },
+    "lastUpdatedBy": {
+      "_id": "687f5c87f929ec8c77f00695",
+      "provenance": "AD",
+      "username": "016662"
+    },
+    "created": "2025-10-14T18:35:24.000Z",
+    "lastUpdated": "2025-10-14T18:40:11.000Z",
+    "iid": 12,
+    "componentIidIndex": 99,
+    "thumbnail": "",
+    "referencedComponentHashes": [
+      {
+        "type": "transformation",
+        "reference": "682cc22f18f0da60316bbd55",
+        "name": "Standard Output",
+        "hash": "d822251f17b6b8f3a2d9d5c20cf4c03f895e3518"
+      },
+      {
+        "type": "automation",
+        "reference": "698ec902b24b11733ee35196",
+        "name": "MOP - S2S IPSEC Tunnel Creation",
+        "hash": "06192007dc7adcff4bc055f74c864603c439e274"
+      }
+    ],
+    "members": [],
+    "accessControl": {
+      "manage": [],
+      "write": [],
+      "execute": [],
+      "read": []
+    }
+  },
+  "metadata": {}
+}

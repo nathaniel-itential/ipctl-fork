@@ -145,14 +145,17 @@ func (svc *AutomationService) GetAll() ([]*Automation, error) {
 		Metadata Metadata      `json:"metadata"`
 	}
 
-	var res Response
-
 	var automations []*Automation
 
 	var limit = 100
 	var skip = 0
 
 	for {
+		// Declare res inside the loop so each page decodes into a freshly
+		// allocated struct. Reusing a single res across pages lets
+		// encoding/json merge map fields and reuse slice backing arrays,
+		// bleeding fields from one page's elements into the next.
+		var res Response
 		if err := svc.GetRequest(&Request{
 			uri:    "/operations-manager/automations",
 			params: &QueryParams{Limit: limit, Skip: skip},
@@ -160,9 +163,7 @@ func (svc *AutomationService) GetAll() ([]*Automation, error) {
 			return nil, err
 		}
 
-		for _, ele := range res.Data {
-			automations = append(automations, ele)
-		}
+		automations = append(automations, res.Data...)
 
 		if len(automations) == res.Metadata.Total {
 			break

@@ -86,15 +86,20 @@ func (svc *InstanceService) GetAll(modelId string) ([]Instance, error) {
 		Data     []Instance `json:"data"`
 	}
 
-	var res Response
 	var uri = fmt.Sprintf("/lifecycle-manager/resources/%s/instances", modelId)
 
 	var results []Instance
+	var message string
 
 	var limit = 100
 	var skip = 0
 
 	for {
+		// Declare res inside the loop so each page decodes into a freshly
+		// allocated struct. Reusing a single res across pages lets
+		// encoding/json merge map fields and reuse slice backing arrays,
+		// bleeding fields from one page's elements into the next.
+		var res Response
 		if err := svc.GetRequest(&Request{
 			uri:    uri,
 			params: &QueryParams{Limit: limit, Skip: skip, Raw: map[string]string{"include-deleted": "true"}},
@@ -102,9 +107,8 @@ func (svc *InstanceService) GetAll(modelId string) ([]Instance, error) {
 			return nil, err
 		}
 
-		for _, ele := range res.Data {
-			results = append(results, ele)
-		}
+		results = append(results, res.Data...)
+		message = res.Message
 
 		if len(results) == res.Metadata.Total {
 			break
@@ -113,7 +117,7 @@ func (svc *InstanceService) GetAll(modelId string) ([]Instance, error) {
 		skip += limit
 	}
 
-	logging.Info("%s", res.Message)
+	logging.Info("%s", message)
 
 	return results, nil
 }

@@ -62,7 +62,6 @@ func NewTemplate(name, group, description, t string) Template {
 func (svc *TemplateService) GetAll() ([]Template, error) {
 	logging.Trace()
 
-	var res PaginatedResponse
 	var templates []Template
 
 	var limit = 100
@@ -72,6 +71,11 @@ func (svc *TemplateService) GetAll() ([]Template, error) {
 	// this API will simply return all items which is contrary to the API
 	// documentation.  Need to test
 	for {
+		// Declare res inside the loop so each page decodes into a freshly
+		// allocated struct. Reusing a single res across pages lets
+		// encoding/json merge map fields and reuse slice backing arrays,
+		// bleeding fields from one page's elements into the next.
+		var res PaginatedResponse
 		if err := svc.GetRequest(&Request{
 			uri:    "/automation-studio/templates",
 			params: &QueryParams{Limit: limit, Skip: skip},

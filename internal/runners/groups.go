@@ -275,7 +275,7 @@ func (r *GroupRunner) importGroup(in services.Group, replace bool) error {
 	existing, err := r.resource.GetByName(in.Name)
 
 	if err != nil {
-		if err.Error() != "group does not exist" {
+		if !errors.Is(err, resources.ErrNotFound) {
 			return err
 		}
 	}

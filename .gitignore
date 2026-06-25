@@ -201,8 +201,9 @@ __debug_bin
 # Testing and Benchmarking
 # ===================================
 
-# Test cache
-testdata/
+# Generated test data directories. Go testdata/ fixtures are committed by
+# convention (the toolchain skips them at build time); only generated fuzz
+# corpora are ignored, under "Fuzz testing" below.
 *_testdata/
 
 # Benchmark results
@@ -210,8 +211,8 @@ testdata/
 bench/
 benchmarks/
 
-# Fuzz testing
-testdata/fuzz/
+# Fuzz testing (generated corpora at any depth; seed fixtures elsewhere are tracked)
+**/testdata/fuzz/
 *_fuzz.go
 
 # ===================================

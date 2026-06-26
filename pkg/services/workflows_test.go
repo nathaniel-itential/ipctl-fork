@@ -16,14 +16,16 @@ import (
 )
 
 var (
-	workflowsGetSuccess     = "automation-studio/workflows/get.success.json"
-	workflowsGetAllSuccess  = "automation-studio/workflows/getall.success.json"
-	workflowsDeleteSuccess  = "automation-studio/workflows/delete.success.json"
-	workflowsDeleteNotFound = "automation-studio/workflows/delete.notfound.json"
-	workflowsCreateSuccess  = "automation-studio/automations/create.success.json"
-	workflowsExportSuccess  = "workflow_builder/export/export.success.json"
-	workflowsImportSuccess  = "automation-studio/automations/import.success.json"
-	workflowsImportError    = "automation-studio/automations/import.error.json"
+	workflowsGetSuccess          = "automation-studio/workflows/get.success.json"
+	workflowsGetAllSuccess       = "automation-studio/workflows/getall.success.json"
+	workflowsDeleteSuccess       = "automation-studio/workflows/delete.success.json"
+	workflowsDeleteNotFound      = "automation-studio/workflows/delete.notfound.json"
+	workflowsCreateSuccess       = "automation-studio/automations/create.success.json"
+	workflowsExportSuccess       = "workflow_builder/export/export.success.json"
+	workflowsExportWithTags      = "workflow_builder/export/export.with-tags.success.json"
+	workflowsImportSuccess       = "automation-studio/automations/import.success.json"
+	workflowsImportWithTagsSuccess = "automation-studio/automations/import.with-tags.success.json"
+	workflowsImportError         = "automation-studio/automations/import.error.json"
 )
 
 func setupWorkflowService() *WorkflowService {
@@ -518,6 +520,51 @@ func TestWorkflowClearGetAllError(t *testing.T) {
 	err := svc.Clear()
 
 	assert.NotNil(t, err)
+}
+
+// TestWorkflowExportPreservesTags verifies that tags returned by the export API
+// are deserialised into the Workflow struct and not silently dropped.
+func TestWorkflowExportPreservesTags(t *testing.T) {
+	svc := setupWorkflowService()
+	defer testlib.Teardown()
+
+	for _, ele := range fixtureSuites {
+		response := testlib.Fixture(
+			filepath.Join(fixtureRoot, ele, workflowsExportWithTags),
+		)
+
+		testlib.AddPostErrorToMux("/workflow_builder/export", response, http.StatusOK)
+
+		res, err := svc.Export("test")
+
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, []Tag{{Id: "67e6a0f516f3c386c77fa706", Name: "GitLab-Utils", Description: ""}}, res.Tags)
+	}
+}
+
+// TestWorkflowImportPreservesTags verifies that tags present in an imported workflow
+// JSON are serialised and sent to the API, and that the returned workflow carries them.
+func TestWorkflowImportPreservesTags(t *testing.T) {
+	svc := setupWorkflowService()
+	defer testlib.Teardown()
+
+	for _, ele := range fixtureSuites {
+		response := testlib.Fixture(
+			filepath.Join(fixtureRoot, ele, workflowsImportWithTagsSuccess),
+		)
+
+		testlib.AddPostResponseToMux("/automation-studio/automations/import", response, http.StatusOK)
+
+		doc := NewWorkflow("test")
+		doc.Tags = []Tag{{Id: "67e6a0f516f3c386c77fa706", Name: "GitLab-Utils", Description: ""}}
+
+		res, err := svc.Import(doc)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, []Tag{{Id: "67e6a0f516f3c386c77fa706", Name: "GitLab-Utils", Description: ""}}, res.Tags)
+	}
 }
 
 func TestWorkflowClearDeleteError(t *testing.T) {

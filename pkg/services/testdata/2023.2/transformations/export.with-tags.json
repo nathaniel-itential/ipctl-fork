@@ -1,0 +1,28 @@
+{
+  "_id": "679635291190db2bc5752df3",
+  "name": "test",
+  "description": "",
+  "incoming": [],
+  "outgoing": [],
+  "steps": [],
+  "functions": [],
+  "comments": [],
+  "view": {
+    "col": 3,
+    "row": 5
+  },
+  "created": "2025-01-26T13:17:39.048Z",
+  "createdBy": {
+    "_id": "678ec2276d849669c6dbe974",
+    "provenance": "local_aaa",
+    "username": "admin@pronghorn"
+  },
+  "lastUpdated": "2025-01-26T13:17:39.048Z",
+  "lastUpdatedBy": {
+    "_id": "678ec2276d849669c6dbe974",
+    "provenance": "local_aaa",
+    "username": "admin@pronghorn"
+  },
+  "version": "4.3.6-2023.2.5",
+  "tags": [{"_id": "67e6a0f516f3c386c77fa706", "name": "GitLab-Utils", "description": ""}]
+}

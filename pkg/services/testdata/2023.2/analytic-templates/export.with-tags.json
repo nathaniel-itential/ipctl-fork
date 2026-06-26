@@ -1,0 +1,11 @@
+{
+  "_id": "6800fb9af7a998b975bde001",
+  "name": "test",
+  "tags": [{"_id": "6800fb9af7a998b975bde8e5", "name": "Netbox-Utils", "description": "All assets related to managing Netbox integration"}],
+  "passRule": false,
+  "prepostCommands": [],
+  "created": 1737921835182,
+  "createdBy": "",
+  "lastUpdated": 1737921835182,
+  "lastUpdatedBy": ""
+}

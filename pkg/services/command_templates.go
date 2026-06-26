@@ -32,7 +32,7 @@ type CommandTemplate struct {
 	PassRule       bool                     `json:"passRule"`
 	IgnoreWarnings bool                     `json:"ignoreWarnings"`
 	Commands       []CommandTemplateCommand `json:"commands"`
-	Tags           []string                 `json:"tags"`
+	Tags           []Tag                    `json:"tags"`
 	Created        int                      `json:"created"`
 	CreatedBy      string                   `json:"createdBy"`
 	LastUpdated    int                      `json:"lastUpdated"`
@@ -65,6 +65,7 @@ func NewCommandTemplate(name string) CommandTemplate {
 		Id:       name,
 		Name:     name,
 		Commands: []CommandTemplateCommand{cmd},
+		Tags:     []Tag{},
 	}
 }
 

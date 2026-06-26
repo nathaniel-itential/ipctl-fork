@@ -16,15 +16,16 @@ import (
 )
 
 var (
-	transformationsGetAllSuccess   = "transformations/getall.success.json"
-	transformationsGetSuccess      = "transformations/get.success.json"
-	transformationsGetNotFound     = "transformations/get.notfound.json"
-	transformationsCreateSuccess   = "transformations/create.success.json"
-	transformationsCreateError     = "transformations/create.error.json"
-	transformationsCreateDuplicate = "transformations/create.duplicate.json"
-	transformationsDeleteSuccess   = "transformations/delete.success.json"
-	transformationsDeleteNotFound  = "transformations/delete.notfound.json"
-	transformationsImportSuccess   = "transformations/import.success.json"
+	transformationsGetAllSuccess         = "transformations/getall.success.json"
+	transformationsGetSuccess            = "transformations/get.success.json"
+	transformationsGetNotFound           = "transformations/get.notfound.json"
+	transformationsCreateSuccess         = "transformations/create.success.json"
+	transformationsCreateError           = "transformations/create.error.json"
+	transformationsCreateDuplicate       = "transformations/create.duplicate.json"
+	transformationsDeleteSuccess         = "transformations/delete.success.json"
+	transformationsDeleteNotFound        = "transformations/delete.notfound.json"
+	transformationsImportSuccess         = "transformations/import.success.json"
+	transformationsImportWithTagsSuccess = "transformations/export.with-tags.json"
 )
 
 func setupTransformationService() *TransformationService {
@@ -243,4 +244,34 @@ func TestTransformationImport(t *testing.T) {
 		assert.Equal(t, id, res.Id)
 		assert.Equal(t, name, res.Name)
 	}
+}
+
+// TestTransformationImportPreservesTags verifies that tag objects returned by the
+// import API are deserialised into the Transformation struct and not silently
+// dropped. Prior to the fix, Tags []string caused an unmarshal error when the API
+// returned tag objects.
+func TestTransformationImportPreservesTags(t *testing.T) {
+	svc := setupTransformationService()
+	defer testlib.Teardown()
+
+	for _, ele := range fixtureSuites {
+		response := testlib.Fixture(
+			filepath.Join(fixtureRoot, ele, transformationsImportWithTagsSuccess),
+		)
+
+		testlib.AddPostResponseToMux("/transformations/import", response, http.StatusOK)
+
+		res, err := svc.Import(NewTransformation("test", ""))
+
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, []Tag{{Id: "67e6a0f516f3c386c77fa706", Name: "GitLab-Utils", Description: ""}}, res.Tags)
+	}
+}
+
+// TestNewTransformationHasEmptyTags verifies that a newly created Transformation
+// initialises Tags as an empty slice, matching the platform API behaviour.
+func TestNewTransformationHasEmptyTags(t *testing.T) {
+	tr := NewTransformation("test", "")
+	assert.Equal(t, []Tag{}, tr.Tags)
 }

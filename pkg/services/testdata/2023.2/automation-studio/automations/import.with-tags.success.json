@@ -1,0 +1,68 @@
+{
+  "_id": "38b35a21-24a9-43f9-9147-5c69a216d11b",
+  "canvasVersion": 3,
+  "type": "automation",
+  "font_size": 12,
+  "errorHandler": null,
+  "preAutomationTime": 0,
+  "sla": 0,
+  "groups": [],
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "_id": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{24}$"
+      },
+      "initiator": {
+        "type": "string"
+      }
+    }
+  },
+  "tasks": {
+    "workflow_start": {
+      "name": "workflow_start",
+      "groups": [],
+      "nodeLocation": {
+        "x": 0,
+        "y": -500
+      },
+      "x": 0,
+      "y": 0.5
+    },
+    "workflow_end": {
+      "name": "workflow_end",
+      "groups": [],
+      "nodeLocation": {
+        "x": 0,
+        "y": 500
+      },
+      "x": 1,
+      "y": 0.5
+    }
+  },
+  "transitions": {
+    "workflow_end": {},
+    "workflow_start": {}
+  },
+  "name": "test",
+  "errors": [
+    {
+      "task": "workflow_end",
+      "name": "workflow_end",
+      "message": "Could not find standard transition path between workflow start and task"
+    }
+  ],
+  "last_updated": "2025-01-21T12:01:44.533Z",
+  "last_updated_by": "678ec2276d849669c6dbe974",
+  "lastUpdatedVersion": "5.55.2-2023.2.13",
+  "created": "2025-01-21T12:01:44.536Z",
+  "created_by": "678ec2276d849669c6dbe974",
+  "createdVersion": "5.55.2-2023.2.13",
+  "encodingVersion": 1,
+  "tags": [{"_id": "67e6a0f516f3c386c77fa706", "name": "GitLab-Utils", "description": ""}]
+}

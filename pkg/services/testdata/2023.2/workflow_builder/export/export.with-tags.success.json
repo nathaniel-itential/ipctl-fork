@@ -1,0 +1,71 @@
+{
+  "canvasVersion": 3,
+  "font_size": 12,
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "name": "test",
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "_id": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{24}$"
+      },
+      "initiator": {
+        "type": "string"
+      }
+    }
+  },
+  "preAutomationTime": 0,
+  "sla": 0,
+  "tasks": {
+    "workflow_end": {
+      "groups": [],
+      "name": "workflow_end",
+      "nodelocation": {
+        "x": 0,
+        "y": 500
+      },
+      "x": 1,
+      "y": 0.5
+    },
+    "workflow_start": {
+      "groups": [],
+      "name": "workflow_start",
+      "nodelocation": {
+        "x": 0,
+        "y": -500
+      },
+      "x": 0,
+      "y": 0.5
+    }
+  },
+  "transitions": {
+    "workflow_end": {},
+    "workflow_start": {}
+  },
+  "type": "automation",
+  "last_updated": "2025-01-25T13:21:03.138Z",
+  "last_updated_by": {
+    "provenance": "local_aaa",
+    "username": "admin@pronghorn",
+    "firstname": "admin",
+    "inactive": false,
+    "gitTokens": {}
+  },
+  "lastUpdatedVersion": "5.55.2-2023.2.13",
+  "created": "2025-01-25T13:21:03.140Z",
+  "created_by": {
+    "provenance": "local_aaa",
+    "username": "admin@pronghorn",
+    "firstname": "admin",
+    "inactive": false,
+    "gitTokens": {}
+  },
+  "createdVersion": "5.55.2-2023.2.13",
+  "tags": [{"_id": "67e6a0f516f3c386c77fa706", "name": "GitLab-Utils", "description": ""}],
+  "groups": [],
+  "migrationVersion": 3
+}

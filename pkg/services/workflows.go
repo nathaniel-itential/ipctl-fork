@@ -49,6 +49,7 @@ type Workflow struct {
 	OutputSchema       map[string]interface{} `json:"outputSchema"`
 	PreAutomationTime  int                    `json:"preAutomationTime"`
 	Sla                int                    `json:"sla"`
+	Tags               []Tag                  `json:"tags"`
 	Tasks              map[string]interface{} `json:"tasks"`
 	Transitions        map[string]interface{} `json:"transitions"`
 	Type               string                 `json:"type"`
@@ -112,6 +113,7 @@ func NewWorkflow(name string) Workflow {
 		CanvasVersion: defaultWorkflowCanvasVersion,
 		FontSize:      defaultWorkflowFontSize,
 		Groups:        []any{},
+		Tags:          []Tag{},
 		Transitions: map[string]interface{}{
 			"workflow_start": map[string]interface{}{},
 			"workflow_end":   map[string]interface{}{},

@@ -38,7 +38,7 @@ func (svc *ApiService) request(m string, uri string, body map[string]interface{}
 	req := &Request{
 		client:             svc.client,
 		method:             m,
-		uri:                uri,
+		uri:                u.Path,
 		params:             params,
 		expectedStatusCode: expectedStatusCode,
 	}

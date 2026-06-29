@@ -182,3 +182,9 @@ func AddPutErrorToMux(uri, body string, statusCode int) {
 	}
 	addResponse(uri, body, http.MethodPut, statusCode)
 }
+
+// AddHandlerToMux registers a custom handler for the given URI pattern,
+// allowing tests to inspect the incoming request directly.
+func AddHandlerToMux(uri string, handler http.HandlerFunc) {
+	mux.HandleFunc(uri, handler)
+}

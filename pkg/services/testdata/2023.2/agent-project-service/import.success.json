@@ -1,0 +1,10 @@
+{
+  "message": "Successfully imported agent project",
+  "data": {
+    "_id": "6a1bc2d3e4f0123456789099",
+    "name": "imported-agent-project",
+    "description": "An imported agent project",
+    "agentProjectBundleVersion": 1,
+    "agents": []
+  }
+}

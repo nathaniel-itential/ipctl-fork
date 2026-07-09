@@ -283,7 +283,9 @@ type AgentProjectServicer interface {
 	Get(id string) (*AgentProject, error)
 	GetByName(name string) (*AgentProject, error)
 	Export(id string) (*AgentProjectBundle, error)
-	Import(bundle AgentProjectBundle) (*AgentProjectBundle, error)
+	Import(bundle AgentProjectBundle, conflictMode string) (*AgentProjectBundle, error)
+	UpdateProject(projectId string, data map[string]interface{}) error
+	Delete(id string) error
 }
 
 // WorkflowServicer defines operations for managing workflow assets.

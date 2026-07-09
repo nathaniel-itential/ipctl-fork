@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/itential/ipctl/internal/config"
@@ -23,14 +24,20 @@ import (
 // It implements the Reader, Importer, and Exporter interfaces.
 type AgentProjectRunner struct {
 	BaseRunner
-	resource resources.AgentProjectResourcer
+	resource     resources.AgentProjectResourcer
+	accounts     *services.AccountService
+	groups       *services.GroupService
+	userSettings *services.UserSettingsService
 }
 
 // NewAgentProjectRunner creates a new AgentProjectRunner with the provided client and config.
 func NewAgentProjectRunner(c client.Client, cfg config.Provider) *AgentProjectRunner {
 	return &AgentProjectRunner{
-		BaseRunner: NewBaseRunner(c, cfg),
-		resource:   resources.NewAgentProjectResource(services.NewAgentProjectService(c)),
+		BaseRunner:   NewBaseRunner(c, cfg),
+		resource:     resources.NewAgentProjectResource(services.NewAgentProjectService(c)),
+		accounts:     services.NewAccountService(c),
+		groups:       services.NewGroupService(c),
+		userSettings: services.NewUserSettingsService(c),
 	}
 }
 
@@ -84,10 +91,12 @@ func (r *AgentProjectRunner) Describe(in Request) (*Response, error) {
 //
 
 // Import imports an agent project bundle from a local file or Git repository.
+// Optionally adds members to the imported project if specified via the --member flag.
 func (r *AgentProjectRunner) Import(in Request) (*Response, error) {
 	logging.Trace()
 
 	common := in.Common.(*flags.AssetImportCommon)
+	options := in.Options.(*flags.AgentProjectImportOptions)
 
 	path, err := importGetPathFromRequest(in)
 	if err != nil {
@@ -113,9 +122,31 @@ func (r *AgentProjectRunner) Import(in Request) (*Response, error) {
 		}
 	}
 
-	imported, err := r.resource.Import(bundle)
+	conflictMode := options.ConflictMode
+	if conflictMode == "" {
+		// --conflict-mode wasn't explicitly set: --replace implies "replace", otherwise default to "keep-both".
+		if common.Replace {
+			conflictMode = "replace"
+		} else {
+			conflictMode = "keep-both"
+		}
+	}
+
+	if conflictMode != "keep-both" && conflictMode != "replace" {
+		return nil, fmt.Errorf("invalid --conflict-mode %q (must be 'keep-both' or 'replace')", conflictMode)
+	}
+
+	imported, err := r.resource.Import(bundle, conflictMode)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := r.updateMembers(imported.Id, options.Members); err != nil {
+		// Cleanup: delete the partially imported project
+		if delErr := r.resource.Delete(imported.Id); delErr != nil {
+			logging.Error(delErr, "failed to cleanup agent project %s after member update error", imported.Id)
+		}
+		return nil, fmt.Errorf("failed to update agent project members: %w", err)
 	}
 
 	return &Response{
@@ -185,4 +216,233 @@ func extractAgentProjectUsername(userObj any, fallback string) string {
 	}
 
 	return username
+}
+
+// AgentProjectMemberSpec represents an agent project member specification parsed
+// from CLI flags. It is used internally for parsing member specifications from
+// CLI flags and constructing AgentProjectMember objects for API calls.
+//
+// Type must be either "account" or "group" (use constants services.MemberTypeAccount or services.MemberTypeGroup).
+// Access must be one of "owner", "editor", "operator", or "viewer" (use constants services.MemberRole*).
+// Name is the username (for accounts) or group name (for groups).
+type AgentProjectMemberSpec struct {
+	Type   string // "account" or "group"
+	Name   string // Username or group name
+	Access string // "owner", "editor", "operator", or "viewer"
+}
+
+// updateMembers adds members to an agent project after it has been created or imported.
+//
+// This helper method is used internally by Import to add members to an agent project.
+// It parses member specifications, resolves accounts and groups, and adds them to the
+// project while automatically excluding the active user.
+//
+// Parameters:
+//   - projectId: The ID of the agent project to add members to
+//   - projectMembers: Slice of member specification strings (format: "type=account,name=alice,access=editor")
+//
+// Returns:
+//   - nil on success
+//   - Error if member parsing, resolution, or addition fails
+func (r *AgentProjectRunner) updateMembers(projectId string, projectMembers []string) error {
+	logging.Trace()
+
+	if len(projectMembers) == 0 {
+		return nil // No members to update
+	}
+
+	activeUser, err := r.userSettings.Get()
+	if err != nil {
+		return fmt.Errorf("failed to get active user: %w", err)
+	}
+
+	members, err := r.buildAgentProjectMembers(projectMembers, activeUser.Username, r.accounts, r.groups)
+	if err != nil {
+		return err
+	}
+
+	if len(members) > 0 {
+		if err := r.resource.AddMembers(projectId, members); err != nil {
+			return fmt.Errorf("failed to add members to agent project: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// resolveAgentProjectMember resolves an AgentProjectMemberSpec into an AgentProjectMember
+// by looking up the account or group and populating all required fields.
+func (r *AgentProjectRunner) resolveAgentProjectMember(
+	member *AgentProjectMemberSpec,
+	accounts *services.AccountService,
+	groups *services.GroupService,
+) (services.AgentProjectMember, error) {
+	switch member.Type {
+	case services.MemberTypeAccount:
+		account, err := accounts.GetByName(member.Name)
+		if err != nil {
+			return services.AgentProjectMember{}, fmt.Errorf("account %q not found: %w", member.Name, err)
+		}
+		return services.AgentProjectMember{
+			Provenance: account.Provenance,
+			Reference:  account.Id,
+			Role:       member.Access,
+			Type:       services.MemberTypeAccount,
+			Username:   account.Username,
+		}, nil
+
+	case services.MemberTypeGroup:
+		group, err := groups.GetByName(member.Name)
+		if err != nil {
+			return services.AgentProjectMember{}, fmt.Errorf("group %q not found: %w", member.Name, err)
+		}
+		return services.AgentProjectMember{
+			Provenance: group.Provenance,
+			Reference:  group.Id,
+			Role:       member.Access,
+			Type:       services.MemberTypeGroup,
+			Name:       group.Name,
+		}, nil
+
+	default:
+		return services.AgentProjectMember{}, fmt.Errorf("invalid member type %q (must be 'account' or 'group')", member.Type)
+	}
+}
+
+// buildAgentProjectMembers converts member specifications into AgentProjectMember objects.
+// It resolves accounts and groups by name, skips the active user, and validates
+// member types and access levels.
+//
+// Parameters:
+//   - memberSpecs: Slice of member specification strings (format: "type=account,name=alice,access=editor")
+//   - activeUsername: Username of the currently authenticated user (will be skipped)
+//   - accounts: Account service for resolving account names
+//   - groups: Group service for resolving group names
+//
+// Returns:
+//   - Slice of AgentProjectMember objects ready for API submission
+//   - Error if member parsing fails, member not found, or resolution fails
+func (r *AgentProjectRunner) buildAgentProjectMembers(
+	memberSpecs []string,
+	activeUsername string,
+	accounts *services.AccountService,
+	groups *services.GroupService,
+) ([]services.AgentProjectMember, error) {
+	logging.Trace()
+
+	if len(memberSpecs) == 0 {
+		return nil, nil
+	}
+
+	var members []services.AgentProjectMember
+
+	for _, spec := range memberSpecs {
+		member, err := parseAgentProjectMember(spec)
+		if err != nil {
+			return nil, fmt.Errorf("invalid member specification %q: %w", spec, err)
+		}
+
+		// Skip active user
+		if member.Type == services.MemberTypeAccount && member.Name == activeUsername {
+			logging.Info("skipping active user %q from member list", member.Name)
+			continue
+		}
+
+		projectMember, err := r.resolveAgentProjectMember(member, accounts, groups)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve member %q: %w", member.Name, err)
+		}
+
+		members = append(members, projectMember)
+	}
+
+	return members, nil
+}
+
+// parseAgentProjectMember parses a member specification string into an AgentProjectMemberSpec.
+// The format is: "type=<account|group>,name=<name>[,access=<role>]"
+//
+// Parameters:
+//   - member: Member specification string
+//
+// Returns:
+//   - Parsed AgentProjectMemberSpec with defaults applied
+//   - Error if format is invalid or required fields are missing
+//
+// Example valid inputs:
+//   - "type=account,name=alice"
+//   - "type=account,name=alice,access=owner"
+//   - "type=group,name=devops,access=editor"
+func parseAgentProjectMember(member string) (*AgentProjectMemberSpec, error) {
+	if member == "" {
+		return nil, fmt.Errorf("member specification cannot be empty")
+	}
+
+	parts := strings.Split(member, ",")
+	m := &AgentProjectMemberSpec{
+		Access: services.MemberRoleEditor, // Default access level
+	}
+
+	seen := make(map[string]bool, 3)
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		tokens := strings.SplitN(part, "=", 2)
+		if len(tokens) != 2 {
+			return nil, fmt.Errorf("invalid key=value pair %q in member specification %q", part, member)
+		}
+
+		key := strings.TrimSpace(tokens[0])
+		value := strings.TrimSpace(tokens[1])
+
+		if value == "" {
+			return nil, fmt.Errorf("empty value for key %q in member specification %q", key, member)
+		}
+
+		if seen[key] {
+			return nil, fmt.Errorf("duplicate key %q in member specification %q", key, member)
+		}
+		seen[key] = true
+
+		switch key {
+		case "type":
+			m.Type = value
+		case "name":
+			m.Name = value
+		case "access":
+			m.Access = value
+		default:
+			return nil, fmt.Errorf("unknown key %q in member specification %q", key, member)
+		}
+	}
+
+	// Validate required fields
+	if m.Type == "" {
+		return nil, fmt.Errorf("missing required 'type' field in member specification %q", member)
+	}
+	if m.Name == "" {
+		return nil, fmt.Errorf("missing required 'name' field in member specification %q", member)
+	}
+
+	// Validate type
+	if m.Type != services.MemberTypeAccount && m.Type != services.MemberTypeGroup {
+		return nil, fmt.Errorf("invalid type %q (must be 'account' or 'group') in member specification %q", m.Type, member)
+	}
+
+	// Validate access
+	validAccess := []string{
+		services.MemberRoleOwner,
+		services.MemberRoleEditor,
+		services.MemberRoleOperator,
+		services.MemberRoleViewer,
+	}
+	if !slices.Contains(validAccess, m.Access) {
+		return nil, fmt.Errorf("invalid access %q (must be one of: owner, editor, operator, viewer) in member specification %q", m.Access, member)
+	}
+
+	return m, nil
 }

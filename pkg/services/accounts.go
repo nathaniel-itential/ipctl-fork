@@ -142,6 +142,8 @@ func (svc *AccountService) Activate(id string) error {
 
 // GetByName retrieves an account by username using client-side filtering.
 // DEPRECATED: Business logic method - prefer using resources.AccountResource.GetByName
+// When multiple accounts share the same username, an active account is
+// preferred over an inactive one.
 func (svc *AccountService) GetByName(name string) (*Account, error) {
 	logging.Trace()
 
@@ -150,10 +152,22 @@ func (svc *AccountService) GetByName(name string) (*Account, error) {
 		return nil, err
 	}
 
+	var inactiveMatch *Account
+
 	for i := range accounts {
 		if accounts[i].Username == name {
-			return &accounts[i], nil
+			if !accounts[i].Inactive {
+				return &accounts[i], nil
+			}
+
+			if inactiveMatch == nil {
+				inactiveMatch = &accounts[i]
+			}
 		}
+	}
+
+	if inactiveMatch != nil {
+		return inactiveMatch, nil
 	}
 
 	return nil, errors.New("account not found")

@@ -45,6 +45,60 @@ func (r *AgentProjectResource) Export(id string) (*services.AgentProjectBundle, 
 }
 
 // Import imports an agent project bundle.
-func (r *AgentProjectResource) Import(bundle services.AgentProjectBundle) (*services.AgentProjectBundle, error) {
-	return r.service.Import(bundle)
+func (r *AgentProjectResource) Import(bundle services.AgentProjectBundle, conflictMode string) (*services.AgentProjectBundle, error) {
+	return r.service.Import(bundle, conflictMode)
+}
+
+// Delete removes an agent project by its identifier.
+// This is a pass-through to the service layer for pure API access.
+func (r *AgentProjectResource) Delete(id string) error {
+	return r.service.Delete(id)
+}
+
+// AddMembers adds new members to an existing agent project.
+// This method implements the business logic of fetching current members,
+// merging with new members, and updating the project.
+//
+// The PATCH API only accepts "type", "reference", and "role" per member —
+// it rejects members with any additional properties (e.g. username, name,
+// provenance), so members are serialized down to that minimal shape here.
+// It also rejects duplicate (type, reference) pairs, so if a newly specified
+// member matches one the platform already assigned (e.g. the project creator),
+// the new member's role wins.
+func (r *AgentProjectResource) AddMembers(projectId string, members []services.AgentProjectMember) error {
+	logging.Trace()
+
+	project, err := r.service.Get(projectId)
+	if err != nil {
+		return err
+	}
+
+	type memberKey struct {
+		Type      string
+		Reference string
+	}
+
+	merged := make(map[memberKey]services.AgentProjectMember, len(members)+len(project.Members))
+
+	for _, m := range project.Members {
+		merged[memberKey{m.Type, m.Reference}] = m
+	}
+
+	for _, m := range members {
+		merged[memberKey{m.Type, m.Reference}] = m
+	}
+
+	minimalMembers := make([]map[string]interface{}, 0, len(merged))
+	for _, m := range merged {
+		minimalMembers = append(minimalMembers, map[string]interface{}{
+			"type":      m.Type,
+			"reference": m.Reference,
+			"role":      m.Role,
+		})
+	}
+
+	data := map[string]interface{}{
+		"members": minimalMembers,
+	}
+	return r.service.UpdateProject(projectId, data)
 }

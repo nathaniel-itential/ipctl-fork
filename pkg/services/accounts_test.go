@@ -133,6 +133,44 @@ func TestAccountGetByNameError(t *testing.T) {
 	assert.Equal(t, reflect.TypeOf((*Account)(nil)), reflect.TypeOf(res))
 }
 
+func TestAccountGetByNamePrefersActive(t *testing.T) {
+	svc := setupAccountService()
+	defer testlib.Teardown()
+
+	mockResponse := `{
+		"results": [
+			{
+				"_id": "inactive-id-1",
+				"email": "joksan.flores@itential.com",
+				"firstname": "Joksan",
+				"inactive": true,
+				"loggedIn": false,
+				"provenance": "Okta SAML",
+				"username": "joksan.flores@itential.com"
+			},
+			{
+				"_id": "active-id",
+				"email": "joksan.flores@itential.com",
+				"firstname": "Joksan",
+				"inactive": false,
+				"loggedIn": true,
+				"provenance": "CloudAAA",
+				"username": "joksan.flores@itential.com"
+			}
+		],
+		"total": 2
+	}`
+
+	testlib.AddGetResponseToMux("/authorization/accounts", mockResponse, 0)
+
+	res, err := svc.GetByName("joksan.flores@itential.com")
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, "active-id", res.Id)
+	assert.False(t, res.Inactive)
+}
+
 func TestAccountGetByNameNotFound(t *testing.T) {
 	svc := setupAccountService()
 	defer testlib.Teardown()

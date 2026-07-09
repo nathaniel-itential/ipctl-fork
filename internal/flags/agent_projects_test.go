@@ -12,11 +12,7 @@ import (
 )
 
 func TestAgentProjectImportOptions_Flags(t *testing.T) {
-	opts := &AgentProjectImportOptions{}
-	cmd := &cobra.Command{}
-	opts.Flags(cmd)
-	// No extra flags defined; just verify the struct satisfies Flagger
-	assert.NotNil(t, opts)
+	checkFlags(t, &AgentProjectImportOptions{}, []string{"member"})
 }
 
 func TestAgentProjectExportOptions_Flags(t *testing.T) {

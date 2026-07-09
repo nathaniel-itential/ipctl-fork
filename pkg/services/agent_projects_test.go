@@ -202,7 +202,7 @@ func TestAgentProjectService_Import(t *testing.T) {
 			Agents:      []map[string]interface{}{},
 		}
 
-		res, err := svc.Import(bundle)
+		res, err := svc.Import(bundle, "keep-both")
 
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -218,7 +218,7 @@ func TestAgentProjectService_Import_Error(t *testing.T) {
 
 	bundle := AgentProjectBundle{Name: "test"}
 
-	res, err := svc.Import(bundle)
+	res, err := svc.Import(bundle, "keep-both")
 
 	assert.NotNil(t, err)
 	assert.Nil(t, res)

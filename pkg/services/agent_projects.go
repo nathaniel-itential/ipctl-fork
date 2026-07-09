@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	agentProjectsBasePath    = "/agent-project-service/projects"
-	agentProjectBundlesPath  = "/agent-project-service/project-bundles"
-	defaultAgentProjectLimit = 100
+	agentProjectsBasePath      = "/agent-project-service/projects"
+	agentProjectsAdminBasePath = "/agent-project-service/admin/projects"
+	agentProjectBundlesPath    = "/agent-project-service/project-bundles"
+	defaultAgentProjectLimit   = 100
 )
 
 // AgentProjectComponent represents a single component (agent) within an agent project.
@@ -181,8 +182,68 @@ func (svc *AgentProjectService) Export(id string) (*AgentProjectBundle, error) {
 	return &res.Data, nil
 }
 
+// UpdateProject updates an agent project via PATCH request.
+//
+// This method accepts a map of fields to update. Common fields include:
+//   - members: []AgentProjectMember - replaces the entire members list
+//   - name: string - updates the project name
+//   - description: string - updates the project description
+//
+// To update only members, use a map with the "members" key:
+//
+//	data := map[string]interface{}{"members": members}
+//
+// The projectId parameter must be a valid MongoDB ObjectId string.
+// The data parameter should contain the fields to update.
+//
+// Returns an error if the update fails or if the project does not exist.
+func (svc *AgentProjectService) UpdateProject(projectId string, data map[string]interface{}) error {
+	logging.Trace()
+
+	if projectId == "" {
+		return fmt.Errorf("agent project id cannot be empty")
+	}
+
+	if data == nil || len(data) == 0 {
+		return fmt.Errorf("update data cannot be nil or empty")
+	}
+
+	uri := fmt.Sprintf("%s/%s", agentProjectsBasePath, projectId)
+
+	if err := svc.Patch(uri, data, nil); err != nil {
+		return fmt.Errorf("failed to update agent project %s: %w", projectId, err)
+	}
+
+	return nil
+}
+
+// Delete removes an agent project by its unique identifier.
+//
+// This is a destructive operation that cannot be undone. All components
+// and configuration within the project will be deleted.
+//
+// The id parameter must be a valid MongoDB ObjectId string.
+// Returns an error if the project does not exist or if the deletion fails.
+func (svc *AgentProjectService) Delete(id string) error {
+	logging.Trace()
+
+	if id == "" {
+		return fmt.Errorf("agent project id cannot be empty")
+	}
+
+	uri := fmt.Sprintf("%s/%s", agentProjectsAdminBasePath, id)
+
+	if err := svc.BaseService.Delete(uri); err != nil {
+		return fmt.Errorf("failed to delete agent project %s: %w", id, err)
+	}
+
+	return nil
+}
+
 // Import imports an agent project bundle into the platform.
-func (svc *AgentProjectService) Import(bundle AgentProjectBundle) (*AgentProjectBundle, error) {
+// conflictMode controls how a collision with an existing project is handled ("keep-both" or "replace").
+// providerResolutions is sent as a map of agent UUID to nil, since no provider profiles are resolved by ipctl.
+func (svc *AgentProjectService) Import(bundle AgentProjectBundle, conflictMode string) (*AgentProjectBundle, error) {
 	logging.Trace()
 
 	type importResponse struct {
@@ -190,8 +251,26 @@ func (svc *AgentProjectService) Import(bundle AgentProjectBundle) (*AgentProject
 		Data    AgentProjectBundle `json:"data"`
 	}
 
+	providerResolutions := make(map[string]interface{}, len(bundle.Agents))
+
+	for _, agent := range bundle.Agents {
+		uuid, ok := agent["_id"].(string)
+		if !ok || uuid == "" {
+			uuid, ok = agent["uuid"].(string)
+		}
+
+		if !ok || uuid == "" {
+			logging.Info("skipping agent with no _id or uuid field when building providerResolutions")
+			continue
+		}
+
+		providerResolutions[uuid] = nil
+	}
+
 	body := map[string]interface{}{
-		"bundle": bundle,
+		"bundle":              bundle,
+		"conflictMode":        conflictMode,
+		"providerResolutions": providerResolutions,
 	}
 
 	var res importResponse

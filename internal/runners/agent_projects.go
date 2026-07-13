@@ -87,6 +87,177 @@ func (r *AgentProjectRunner) Describe(in Request) (*Response, error) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// Writer Interface
+//
+
+// Create creates a new agent project with the given name and an optional description.
+func (r *AgentProjectRunner) Create(in Request) (*Response, error) {
+	logging.Trace()
+
+	name := in.Args[0]
+	description := in.Options.(*flags.AgentProjectCreateOptions).Description
+
+	existing, _ := r.resource.GetByName(name)
+	if existing != nil {
+		return nil, fmt.Errorf("agent project %q already exists", name)
+	}
+
+	project, err := r.resource.Create(name, description)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Response{
+		Text:   fmt.Sprintf("Successfully created agent project `%s` (%s)", project.Name, project.Id),
+		Object: project,
+	}, nil
+}
+
+// Delete removes an agent project by name.
+func (r *AgentProjectRunner) Delete(in Request) (*Response, error) {
+	logging.Trace()
+
+	project, err := r.resource.GetByName(in.Args[0])
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.resource.Delete(project.Id); err != nil {
+		return nil, err
+	}
+
+	return &Response{
+		Text: fmt.Sprintf("Successfully deleted agent project `%s` (%s)", project.Name, project.Id),
+	}, nil
+}
+
+// Clear removes all agent projects from the platform.
+func (r *AgentProjectRunner) Clear(in Request) (*Response, error) {
+	logging.Trace()
+
+	projects, err := r.resource.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, p := range projects {
+		if err := r.resource.Delete(p.Id); err != nil {
+			logging.Debug("failed to delete agent project `%s` (%s)", p.Name, p.Id)
+			return nil, err
+		}
+	}
+
+	return &Response{
+		Text: fmt.Sprintf("Deleted %v agent project(s)", len(projects)),
+	}, nil
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Copier Interface
+//
+
+// Copy copies an agent project from the current profile to a destination profile.
+func (r *AgentProjectRunner) Copy(in Request) (*Response, error) {
+	logging.Trace()
+
+	res, err := Copy(CopyRequest{Request: in, Type: "agent project"}, r)
+	if err != nil {
+		return nil, err
+	}
+
+	dstClient, cancel, err := NewClient(in.Common.(*flags.AssetCopyCommon).To, r.config)
+	if err != nil {
+		return nil, err
+	}
+	defer cancel()
+
+	accounts := services.NewAccountService(dstClient)
+	groups := services.NewGroupService(dstClient)
+	userSettings := services.NewUserSettingsService(dstClient)
+
+	activeUser, err := userSettings.Get()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active user: %w", err)
+	}
+
+	members, err := r.buildAgentProjectMembers(
+		in.Options.(*flags.AgentProjectCopyOptions).Members,
+		activeUser.Username,
+		accounts,
+		groups,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(members) > 0 {
+		projectRes := resources.NewAgentProjectResource(services.NewAgentProjectService(dstClient))
+		bundle := res.CopyToData.(services.AgentProjectBundle)
+		if err := projectRes.AddMembers(bundle.Id, members); err != nil {
+			return nil, fmt.Errorf("failed to add members: %w", err)
+		}
+	}
+
+	return &Response{
+		Text: fmt.Sprintf("Successfully copied agent project `%s` from `%s` to `%s`", res.Name, res.From, res.To),
+	}, nil
+}
+
+// CopyFrom exports an agent project bundle from the specified profile.
+func (r *AgentProjectRunner) CopyFrom(profile, name string) (any, error) {
+	logging.Trace()
+
+	c, cancel, err := NewClient(profile, r.config)
+	if err != nil {
+		return nil, err
+	}
+	defer cancel()
+
+	projectRes := resources.NewAgentProjectResource(services.NewAgentProjectService(c))
+
+	project, err := projectRes.GetByName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	bundle, err := projectRes.Export(project.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return *bundle, nil
+}
+
+// CopyTo imports an agent project bundle to the specified profile.
+func (r *AgentProjectRunner) CopyTo(profile string, in any, replace bool) (any, error) {
+	logging.Trace()
+
+	c, cancel, err := NewClient(profile, r.config)
+	if err != nil {
+		return nil, err
+	}
+	defer cancel()
+
+	projectRes := resources.NewAgentProjectResource(services.NewAgentProjectService(c))
+
+	bundle, ok := in.(services.AgentProjectBundle)
+	if !ok {
+		return nil, fmt.Errorf("expected services.AgentProjectBundle, got %T", in)
+	}
+
+	if exists, _ := projectRes.GetByName(bundle.Name); exists != nil {
+		if !replace {
+			return nil, fmt.Errorf("agent project %q exists on the destination server, use --replace to overwrite", bundle.Name)
+		}
+		if err := projectRes.Delete(exists.Id); err != nil {
+			return nil, fmt.Errorf("failed to delete existing agent project: %w", err)
+		}
+	}
+
+	return projectRes.Import(bundle, "keep-both")
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Importer Interface
 //
 

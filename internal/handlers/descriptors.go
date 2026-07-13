@@ -41,6 +41,7 @@ const (
 	transformationsDescriptor   = "transformations"
 	jsonformsDescriptor         = "jsonforms"
 	projectsDescriptor          = "projects"
+	agentProjectsDescriptor     = "agent_projects"
 	analyticTemplatesDescriptor = "analytic_templates"
 	templatesDescriptor         = "templates"
 

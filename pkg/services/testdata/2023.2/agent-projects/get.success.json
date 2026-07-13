@@ -1,0 +1,38 @@
+{
+  "message": "success",
+  "data": {
+    "_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "iid": 1,
+    "name": "Test Agent Project",
+    "description": "A test agent project",
+    "components": [
+      {
+        "type": "agent",
+        "iid": 1,
+        "reference": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "folder": "/"
+      }
+    ],
+    "created": "2026-01-01T00:00:00.000Z",
+    "createdBy": {
+      "_id": "cccccccccccccccccccccccc",
+      "username": "admin@itential.com",
+      "provenance": "Local AAA"
+    },
+    "lastUpdated": "2026-01-01T00:00:00.000Z",
+    "lastUpdatedBy": {
+      "_id": "cccccccccccccccccccccccc",
+      "username": "admin@itential.com",
+      "provenance": "Local AAA"
+    },
+    "members": [
+      {
+        "type": "account",
+        "role": "owner",
+        "reference": "cccccccccccccccccccccccc",
+        "username": "admin@itential.com",
+        "provenance": "Local AAA"
+      }
+    ]
+  }
+}

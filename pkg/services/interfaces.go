@@ -277,11 +277,12 @@ type TriggerServicer interface {
 }
 
 // AgentProjectServicer defines operations for managing agent projects.
-// It handles retrieval and import/export of agent project bundles.
+// It handles retrieval, CRUD, and import/export of agent project bundles.
 type AgentProjectServicer interface {
 	GetAll() ([]AgentProject, error)
 	Get(id string) (*AgentProject, error)
 	GetByName(name string) (*AgentProject, error)
+	Create(name string, description string) (*AgentProject, error)
 	Export(id string) (*AgentProjectBundle, error)
 	Import(bundle AgentProjectBundle, conflictMode string) (*AgentProjectBundle, error)
 	UpdateProject(projectId string, data map[string]interface{}) error

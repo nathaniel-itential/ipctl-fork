@@ -1,0 +1,38 @@
+{
+  "message": "success",
+  "data": {
+    "_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "name": "Test Agent Project",
+    "description": "A test agent project",
+    "agentProjectBundleVersion": 1,
+    "created": "2026-01-01T00:00:00.000Z",
+    "createdBy": {
+      "username": "admin@itential.com",
+      "provenance": "Local AAA"
+    },
+    "agents": [
+      {
+        "_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "name": "Test Agent",
+        "description": "A test agent",
+        "instructions": "Do something useful",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {}
+        },
+        "created": "2026-01-01T00:00:00.000Z",
+        "createdBy": {
+          "username": "admin@itential.com",
+          "provenance": "Local AAA"
+        },
+        "provider": {
+          "profileName": "anthropic",
+          "modelName": "claude-sonnet-4-6"
+        },
+        "tools": []
+      }
+    ]
+  }
+}

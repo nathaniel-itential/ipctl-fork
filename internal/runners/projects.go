@@ -385,7 +385,7 @@ func (r *ProjectRunner) CopyTo(profile string, in any, replace bool) (any, error
 		}
 	}
 
-	return projectRes.Import(project)
+	return projectRes.Import(project, services.ProjectImportConfig{})
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -432,7 +432,22 @@ func (r *ProjectRunner) Import(in Request) (*Response, error) {
 		return nil, err
 	}
 
-	imported, err := r.importProject(project, path, common.Replace)
+	cfg, err := buildProjectImportConfig(options)
+	if err != nil {
+		return nil, err
+	}
+
+	if in.Verbose {
+		logging.Info("skip-reference-validation: %v", cfg.SkipReferenceValidation)
+		logging.Info("assign-new-references: %v", cfg.AssignNewReferences)
+		if cfg.ConflictMode != "" {
+			logging.Info("conflict-mode: %s", cfg.ConflictMode)
+		} else {
+			logging.Info("conflict-mode: (not set)")
+		}
+	}
+
+	imported, err := r.importProject(project, path, common.Replace, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -596,7 +611,7 @@ type Member struct {
 // Side effects:
 //   - May delete existing projects if replace=true
 //   - Reads multiple files from disk in the project's folder structure
-func (r *ProjectRunner) importProject(project services.Project, path string, replace bool) (*services.Project, error) {
+func (r *ProjectRunner) importProject(project services.Project, path string, replace bool, cfg services.ProjectImportConfig) (*services.Project, error) {
 	logging.Trace()
 
 	var projectMap map[string]interface{}
@@ -654,17 +669,44 @@ func (r *ProjectRunner) importProject(project services.Project, path string, rep
 		project.Components[idx].Document = document
 	}
 
-	existing, err := r.resource.GetByName(project.Name)
-	if err == nil && existing != nil {
-		if !replace {
-			return nil, fmt.Errorf("project %q already exists, use --replace to overwrite it", project.Name)
+	if replace {
+		// Client-side delete-and-reimport: --replace takes precedence; conflictMode is ignored.
+		existing, err := r.resource.GetByName(project.Name)
+		if err == nil && existing != nil {
+			if err := r.resource.Delete(existing.Id); err != nil {
+				return nil, fmt.Errorf("failed to delete existing project: %w", err)
+			}
 		}
-		if err := r.resource.Delete(existing.Id); err != nil {
-			return nil, fmt.Errorf("failed to delete existing project: %w", err)
+	} else if cfg.ConflictMode == "" {
+		// Neither --replace nor --conflict-mode: fail fast if the project already exists.
+		existing, err := r.resource.GetByName(project.Name)
+		if err == nil && existing != nil {
+			return nil, fmt.Errorf("project %q already exists, use --replace to overwrite it or --conflict-mode to control server-side conflict resolution", project.Name)
 		}
 	}
+	// --conflict-mode set without --replace: skip the existence check and let the
+	// server resolve conflicts according to the requested strategy.
 
-	return r.resource.Import(project)
+	return r.resource.Import(project, cfg)
+}
+
+// buildProjectImportConfig constructs a ProjectImportConfig from parsed CLI flags,
+// validating the conflict-mode value when provided.
+func buildProjectImportConfig(options *flags.ProjectImportOptions) (services.ProjectImportConfig, error) {
+	if options.ConflictMode != "" &&
+		options.ConflictMode != services.ConflictModeInsertNew &&
+		options.ConflictMode != services.ConflictModeOverwrite {
+		return services.ProjectImportConfig{}, fmt.Errorf(
+			"invalid --conflict-mode %q: must be %q or %q",
+			options.ConflictMode, services.ConflictModeInsertNew, services.ConflictModeOverwrite,
+		)
+	}
+
+	return services.ProjectImportConfig{
+		ConflictMode:            options.ConflictMode,
+		SkipReferenceValidation: options.SkipReferenceValidation,
+		AssignNewReferences:     options.AssignNewReferences,
+	}, nil
 }
 
 // updateMembers adds members to a project after it has been created or imported.

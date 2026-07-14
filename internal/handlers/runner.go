@@ -118,6 +118,7 @@ func NewCommand(c *CommandRunner) *cobra.Command {
 				Common:  c.Common,
 				Runner:  c.Runner,
 				Config:  c.Runtime.GetConfig(),
+				Verbose: c.Runtime.IsVerbose(),
 			}
 
 			resp, err := c.Run(req)

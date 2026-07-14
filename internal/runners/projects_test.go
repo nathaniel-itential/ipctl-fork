@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/itential/ipctl/internal/flags"
 	"github.com/itential/ipctl/internal/testlib"
 	"github.com/itential/ipctl/pkg/services"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // sampleExpandableProject builds a project with two components carrying inline
@@ -114,7 +116,7 @@ func TestImportProjectMissingComponentFile(t *testing.T) {
 	var project services.Project
 	assert.Nil(t, importLoadFromDisk(mainPath, &project))
 
-	res, err := runner.importProject(project, mainPath, false)
+	res, err := runner.importProject(project, mainPath, false, services.ProjectImportConfig{})
 
 	assert.Nil(t, res)
 	assert.NotNil(t, err)
@@ -150,9 +152,166 @@ func TestExpandImportRoundTrip(t *testing.T) {
 	var loaded services.Project
 	assert.Nil(t, importLoadFromDisk(mainPath, &loaded))
 
-	res, err := runner.importProject(loaded, mainPath, false)
+	res, err := runner.importProject(loaded, mainPath, false, services.ProjectImportConfig{})
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
+	assert.Equal(t, "new-id", res.Id)
+}
+
+func TestBuildProjectImportConfig_Defaults(t *testing.T) {
+	cfg, err := buildProjectImportConfig(&flags.ProjectImportOptions{})
+
+	require.NoError(t, err)
+	assert.Equal(t, "", cfg.ConflictMode)
+	assert.False(t, cfg.SkipReferenceValidation)
+	assert.False(t, cfg.AssignNewReferences)
+}
+
+func TestBuildProjectImportConfig_ConflictModeInsertNew(t *testing.T) {
+	cfg, err := buildProjectImportConfig(&flags.ProjectImportOptions{
+		ConflictMode: services.ConflictModeInsertNew,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, services.ConflictModeInsertNew, cfg.ConflictMode)
+}
+
+func TestBuildProjectImportConfig_ConflictModeOverwrite(t *testing.T) {
+	cfg, err := buildProjectImportConfig(&flags.ProjectImportOptions{
+		ConflictMode: services.ConflictModeOverwrite,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, services.ConflictModeOverwrite, cfg.ConflictMode)
+}
+
+func TestBuildProjectImportConfig_InvalidConflictMode(t *testing.T) {
+	_, err := buildProjectImportConfig(&flags.ProjectImportOptions{
+		ConflictMode: "invalid-mode",
+	})
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid --conflict-mode")
+}
+
+func TestBuildProjectImportConfig_SkipReferenceValidation(t *testing.T) {
+	cfg, err := buildProjectImportConfig(&flags.ProjectImportOptions{
+		SkipReferenceValidation: true,
+	})
+
+	require.NoError(t, err)
+	assert.True(t, cfg.SkipReferenceValidation)
+}
+
+func TestBuildProjectImportConfig_AssignNewReferences(t *testing.T) {
+	cfg, err := buildProjectImportConfig(&flags.ProjectImportOptions{
+		AssignNewReferences: true,
+	})
+
+	require.NoError(t, err)
+	assert.True(t, cfg.AssignNewReferences)
+}
+
+func TestBuildProjectImportConfig_AllOptions(t *testing.T) {
+	cfg, err := buildProjectImportConfig(&flags.ProjectImportOptions{
+		ConflictMode:            services.ConflictModeOverwrite,
+		SkipReferenceValidation: true,
+		AssignNewReferences:     true,
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, services.ConflictModeOverwrite, cfg.ConflictMode)
+	assert.True(t, cfg.SkipReferenceValidation)
+	assert.True(t, cfg.AssignNewReferences)
+}
+
+// projectExistsResponse is a project list response containing one project named "RoundTripProject".
+const projectExistsResponse = `{"data":[{"_id":"existing-id","name":"RoundTripProject"}],"metadata":{"total":1}}`
+
+const projectImportSuccess = `{"message":"imported","data":{"_id":"new-id","name":"RoundTripProject"},"metadata":{}}`
+
+// setupImportTest writes a minimal project file to a temp dir and returns the runner,
+// main file path, and a teardown function.
+func setupImportTest(t *testing.T) (*ProjectRunner, string) {
+	t.Helper()
+	runner := NewProjectRunner(testlib.Setup(), testlib.DefaultConfig())
+
+	dir := t.TempDir()
+	project := sampleExpandableProject()
+	assert.Nil(t, expandProject(Request{}, project, dir))
+	return runner, filepath.Join(dir, "RoundTripProject.project.json")
+}
+
+// TestImportProject_ExistsNoFlags errors when project exists and neither --replace nor --conflict-mode is set.
+func TestImportProject_ExistsNoFlags(t *testing.T) {
+	runner, mainPath := setupImportTest(t)
+	defer testlib.Teardown()
+
+	testlib.AddGetResponseToMux("/automation-studio/projects", projectExistsResponse, 0)
+
+	var loaded services.Project
+	assert.Nil(t, importLoadFromDisk(mainPath, &loaded))
+
+	_, err := runner.importProject(loaded, mainPath, false, services.ProjectImportConfig{})
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "already exists")
+}
+
+// TestImportProject_ReplaceDeletesExistingBeforeImport deletes the existing project then imports.
+func TestImportProject_ReplaceDeletesExistingBeforeImport(t *testing.T) {
+	runner, mainPath := setupImportTest(t)
+	defer testlib.Teardown()
+
+	testlib.AddGetResponseToMux("/automation-studio/projects", projectExistsResponse, 0)
+	testlib.AddDeleteResponseToMux("/automation-studio/projects/existing-id", `{}`, 0)
+	testlib.AddPostResponseToMux("/automation-studio/projects/import", projectImportSuccess, http.StatusOK)
+
+	var loaded services.Project
+	assert.Nil(t, importLoadFromDisk(mainPath, &loaded))
+
+	res, err := runner.importProject(loaded, mainPath, true, services.ProjectImportConfig{})
+
+	assert.Nil(t, err)
+	assert.Equal(t, "new-id", res.Id)
+}
+
+// TestImportProject_ConflictModeSkipsExistenceCheck skips the GetByName check and calls import directly.
+func TestImportProject_ConflictModeSkipsExistenceCheck(t *testing.T) {
+	runner, mainPath := setupImportTest(t)
+	defer testlib.Teardown()
+
+	// No GET handler registered — if the existence check runs, the test will fail.
+	testlib.AddPostResponseToMux("/automation-studio/projects/import", projectImportSuccess, http.StatusOK)
+
+	var loaded services.Project
+	assert.Nil(t, importLoadFromDisk(mainPath, &loaded))
+
+	res, err := runner.importProject(loaded, mainPath, false, services.ProjectImportConfig{
+		ConflictMode: services.ConflictModeOverwrite,
+	})
+
+	assert.Nil(t, err)
+	assert.Equal(t, "new-id", res.Id)
+}
+
+// TestImportProject_ReplaceIgnoresConflictMode uses --replace even when conflictMode is set.
+func TestImportProject_ReplaceIgnoresConflictMode(t *testing.T) {
+	runner, mainPath := setupImportTest(t)
+	defer testlib.Teardown()
+
+	testlib.AddGetResponseToMux("/automation-studio/projects", projectExistsResponse, 0)
+	testlib.AddDeleteResponseToMux("/automation-studio/projects/existing-id", `{}`, 0)
+	testlib.AddPostResponseToMux("/automation-studio/projects/import", projectImportSuccess, http.StatusOK)
+
+	var loaded services.Project
+	assert.Nil(t, importLoadFromDisk(mainPath, &loaded))
+
+	res, err := runner.importProject(loaded, mainPath, true, services.ProjectImportConfig{
+		ConflictMode: services.ConflictModeOverwrite,
+	})
+
+	assert.Nil(t, err)
 	assert.Equal(t, "new-id", res.Id)
 }

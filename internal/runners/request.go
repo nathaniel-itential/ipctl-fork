@@ -16,5 +16,6 @@ type Request struct {
 	// Config provides access to application configuration via the Provider interface.
 	// This allows runners to access profiles, features, and other configuration
 	// without depending on the concrete Config type.
-	Config config.Provider
+	Config  config.Provider
+	Verbose bool
 }

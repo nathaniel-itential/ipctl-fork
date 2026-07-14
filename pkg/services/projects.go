@@ -32,6 +32,30 @@ const (
 	MemberRoleViewer   = "viewer"
 )
 
+// ConflictModeInsertNew is the default conflict resolution strategy: new
+// components are inserted and existing ones are left unchanged.
+const ConflictModeInsertNew = "insert-new"
+
+// ConflictModeOverwrite replaces any existing component with the imported one.
+const ConflictModeOverwrite = "overwrite"
+
+// ProjectImportConfig carries optional API-level options for the import endpoint.
+// All fields are optional; zero values produce the same behaviour as the
+// previous hard-coded defaults.
+type ProjectImportConfig struct {
+	// ConflictMode controls how the server resolves conflicts when an imported
+	// component already exists. Valid values are "insert-new" (default) and
+	// "overwrite".
+	ConflictMode string
+
+	// SkipReferenceValidation disables server-side reference validation on import.
+	SkipReferenceValidation bool
+
+	// AssignNewReferences instructs the server to assign new references to
+	// imported components instead of reusing the references in the file.
+	AssignNewReferences bool
+}
+
 // ProjectComponent represents a single component within an Itential project.
 // Components are the building blocks of a project and can include workflows,
 // transformations, templates, and other automation assets.

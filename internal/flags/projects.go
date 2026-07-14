@@ -10,11 +10,17 @@ import (
 
 // Command line options for `import project ...`
 type ProjectImportOptions struct {
-	Members []string
+	Members                 []string
+	SkipReferenceValidation bool
+	ConflictMode            string
+	AssignNewReferences     bool
 }
 
 func (o *ProjectImportOptions) Flags(cmd *cobra.Command) {
 	cmd.Flags().StringArrayVar(&o.Members, "member", o.Members, "Configure one or more project members")
+	cmd.Flags().BoolVar(&o.SkipReferenceValidation, "skip-reference-validation", false, "Skip reference validation on import")
+	cmd.Flags().StringVar(&o.ConflictMode, "conflict-mode", "", `Conflict resolution strategy when a component already exists: "insert-new" or "overwrite"`)
+	cmd.Flags().BoolVar(&o.AssignNewReferences, "assign-new-references", false, "Assign new references to imported components")
 }
 
 // Command line options for `export project ...`

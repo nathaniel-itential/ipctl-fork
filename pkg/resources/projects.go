@@ -108,12 +108,17 @@ func (r *ProjectResource) transformImport(in map[string]interface{}) {
 // Import imports a project with data transformation for server compatibility.
 // This method handles the business logic of transforming folder structures
 // before sending to the API.
-func (r *ProjectResource) Import(in services.Project) (*services.Project, error) {
+func (r *ProjectResource) Import(in services.Project, cfg services.ProjectImportConfig) (*services.Project, error) {
 	logging.Trace()
 
 	body := map[string]interface{}{
-		"conflictMode": "insert-new",
-		"project":      in.Import(),
+		"skipReferenceValidation": cfg.SkipReferenceValidation,
+		"assignNewReferences":     cfg.AssignNewReferences,
+		"project":                 in.Import(),
+	}
+
+	if cfg.ConflictMode != "" {
+		body["conflictMode"] = cfg.ConflictMode
 	}
 
 	b, _ := json.Marshal(body)
@@ -139,6 +144,8 @@ func (r *ProjectResource) Import(in services.Project) (*services.Project, error)
 // AddMembers adds new members to an existing project.
 // This method implements the business logic of fetching current members,
 // merging with new members, and updating the project.
+// Existing members are deduplicated by reference to avoid the server
+// rejecting the request with "may be specified only once".
 func (r *ProjectResource) AddMembers(projectId string, members []services.ProjectMember) error {
 	logging.Trace()
 
@@ -147,11 +154,21 @@ func (r *ProjectResource) AddMembers(projectId string, members []services.Projec
 		return err
 	}
 
-	// Merge existing members with new members
-	allMembers := append(members, project.Members...)
+	// Index new members by reference so existing members with the same
+	// reference are skipped rather than duplicated.
+	newRefs := make(map[string]bool, len(members))
+	for _, m := range members {
+		newRefs[m.Reference] = true
+	}
+
+	for _, m := range project.Members {
+		if !newRefs[m.Reference] {
+			members = append(members, m)
+		}
+	}
 
 	data := map[string]interface{}{
-		"members": allMembers,
+		"members": members,
 	}
 	return r.service.UpdateProject(projectId, data)
 }

@@ -7,7 +7,12 @@ package flags
 import "testing"
 
 func TestProjectImportOptions(t *testing.T) {
-	checkFlags(t, &ProjectImportOptions{}, []string{"member"})
+	checkFlags(t, &ProjectImportOptions{}, []string{
+		"member",
+		"skip-reference-validation",
+		"conflict-mode",
+		"assign-new-references",
+	})
 }
 
 func TestProjectExportOptions(t *testing.T) {

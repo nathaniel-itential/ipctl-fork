@@ -155,8 +155,54 @@ import:
     value is not specified, the default is set to `editor`.  Valid values
     for access include `owner`, `editor`, `operator`, or `viewer`.
 
+    CONFLICT RESOLUTION
+
+    By default, if a project with the same name already exists on the server
+    this command will return an error.  Use one of the following flags to
+    change this behaviour:
+
+    `--replace` performs a client-side delete of the existing project before
+    importing.  The entire project is removed and then re-imported from the
+    file.  When `--replace` is set, `--conflict-mode` is ignored.
+
+    `--conflict-mode` passes a conflict resolution strategy to the server so
+    that it decides how to handle components that already exist.  Valid values
+    are `insert-new` (leave existing components unchanged and only insert new
+    ones) and `overwrite` (replace existing components with the versions in
+    the imported file).  When `--conflict-mode` is set without `--replace`,
+    the local existence check is skipped and the server handles the conflict.
+    When omitted the server applies its own default behaviour.
+
+    `--replace` and `--conflict-mode` are mutually exclusive.  If both are
+    supplied, `--replace` takes precedence and `--conflict-mode` is ignored.
+
+    REFERENCE HANDLING
+
+    Use `--skip-reference-validation` to bypass the server's reference
+    validation checks on import.  This can be useful when importing a project
+    whose referenced components do not yet exist on the target server.
+
+    Use `--assign-new-references` to have the server assign new references to
+    the imported components instead of reusing the references from the file.
+
   example: |
-    # Import a project and add members
+    # Import a project (fails if the project already exists)
+    $ ipctl import project path/to/proj.project.json
+
+    # Delete the existing project and re-import from the file
+    $ ipctl import project path/to/proj.project.json --replace
+
+    # Let the server resolve conflicts (skips local existence check)
+    $ ipctl import project path/to/proj.project.json --conflict-mode overwrite
+    $ ipctl import project path/to/proj.project.json --conflict-mode insert-new
+
+    # Import and skip reference validation
+    $ ipctl import project path/to/proj.project.json --skip-reference-validation
+
+    # Import with new references assigned by the server
+    $ ipctl import project path/to/proj.project.json --assign-new-references
+
+    # Import and add members
     $ ipctl import project path/to/proj.project.json --member type=account,name=bob,access=owner
 
 export:

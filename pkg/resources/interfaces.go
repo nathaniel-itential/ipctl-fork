@@ -100,7 +100,7 @@ type ProjectResourcer interface {
 	GetByName(name string) (*services.Project, error)
 	Create(name string) (*services.Project, error)
 	Delete(id string) error
-	Import(in services.Project) (*services.Project, error)
+	Import(in services.Project, cfg services.ProjectImportConfig) (*services.Project, error)
 	ImportTransformed(data map[string]interface{}) (*services.Project, error)
 	Export(id string) (*services.Project, error)
 	UpdateMembers(projectId string, members []services.ProjectMember) error

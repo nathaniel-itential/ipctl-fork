@@ -1,6 +1,4 @@
 {
-  description = "Viper";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -22,39 +20,26 @@
 
       perSystem =
         { pkgs, ... }:
-        {
+        rec {
           devenv.shells = {
             default = {
               languages = {
                 go.enable = true;
               };
 
-              git-hooks.hooks = {
+              pre-commit.hooks = {
                 nixpkgs-fmt.enable = true;
-                yamllint.enable = true;
               };
 
               packages = with pkgs; [
-                gnumake
-
                 golangci-lint
-                yamllint
               ];
-
-              scripts = {
-                versions.exec = ''
-                  go version
-                  golangci-lint version
-                '';
-              };
-
-              enterShell = ''
-                versions
-              '';
 
               # https://github.com/cachix/devenv/issues/528#issuecomment-1556108767
               containers = pkgs.lib.mkForce { };
             };
+
+            ci = devenv.shells.default;
           };
         };
     };

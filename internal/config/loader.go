@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-viper/encoding/ini"
 	"github.com/itential/ipctl/internal/app"
 	"github.com/itential/ipctl/internal/profile"
 	"github.com/itential/ipctl/internal/repository"
@@ -140,8 +141,15 @@ func (l *Loader) Load() (*Config, error) {
 		return nil, fmt.Errorf("parsing flags: %w", err)
 	}
 
-	// Create a new viper instance (not global)
-	v := viper.New()
+	// Create a new viper instance (not global) with INI support restored.
+	// Viper 1.20 removed the built-in INI codec, so it must be registered
+	// explicitly; the registry falls back to the built-in YAML, JSON, and
+	// TOML codecs for other formats.
+	registry := viper.NewCodecRegistry()
+	if err := registry.RegisterCodec("ini", ini.Codec{}); err != nil {
+		return nil, fmt.Errorf("registering ini codec: %w", err)
+	}
+	v := viper.NewWithOptions(viper.WithCodecRegistry(registry))
 
 	// Apply defaults
 	l.applyDefaults(v)

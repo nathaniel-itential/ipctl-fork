@@ -515,6 +515,12 @@ func (r *AutomationRunner) updateTriggers(in services.Automation) ([]services.Tr
 						return nil, err
 					}
 					triggers = append(triggers, t)
+				default:
+					var t map[string]interface{}
+					if err := json.Unmarshal(b, &t); err != nil {
+						return nil, err
+					}
+					triggers = append(triggers, t)
 				}
 			}
 		}

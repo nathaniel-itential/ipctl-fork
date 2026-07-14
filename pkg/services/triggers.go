@@ -40,6 +40,7 @@ type ScheduleTrigger struct {
 	RepeatUnit        string                 `json:"repeatUnit"`
 	RepeatFrequency   int                    `json:"repeatFrequency"`
 	RepeatInterval    int                    `json:"repeatInterval"`
+	Options           map[string]interface{} `json:"options,omitempty"`
 }
 
 type EventTrigger struct {
@@ -60,6 +61,7 @@ type EventTrigger struct {
 	Topic            string                 `json:"topic"`
 	Schema           map[string]interface{} `json:"schema"`
 	Jst              map[string]interface{} `json:"jst"`
+	Options          map[string]interface{} `json:"options,omitempty"`
 }
 
 type EndpointTrigger struct {
@@ -79,6 +81,7 @@ type EndpointTrigger struct {
 	Jst              map[string]interface{} `json:"jst"`
 	RouteName        string                 `json:"routeName"`
 	Verb             string                 `json:"verb"`
+	Options          map[string]interface{} `json:"options,omitempty"`
 }
 
 type ManualTrigger struct {
@@ -98,6 +101,7 @@ type ManualTrigger struct {
 	LastUpdatedBy    string                 `json:"lastUpdatedBy"`
 	LegacyWrapper    bool                   `json:"legacyWrapper"`
 	MigrationVersion int                    `json:"migrationVersion"`
+	Options          map[string]interface{} `json:"options,omitempty"`
 }
 
 func (t ManualTrigger) MarshalJSON() ([]byte, error) {
@@ -129,6 +133,10 @@ func (t ManualTrigger) MarshalJSON() ([]byte, error) {
 		res["formSchemaHash"] = nil
 	} else {
 		res["formSchemaHash"] = t.FormSchemaHash
+	}
+
+	if t.Options != nil {
+		res["options"] = t.Options
 	}
 
 	return json.Marshal(res)

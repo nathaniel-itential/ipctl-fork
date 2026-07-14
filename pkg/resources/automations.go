@@ -188,7 +188,10 @@ func (r *AutomationResource) transformTrigger(ele interface{}) (services.Trigger
 		}
 		return t, nil
 	default:
-		logging.Error(nil, "unknown trigger type: %s", triggerType)
-		return nil, fmt.Errorf("unknown trigger type: %s", triggerType)
+		var t map[string]interface{}
+		if err := json.Unmarshal(b, &t); err != nil {
+			return nil, fmt.Errorf("error trying to decode trigger of type %s: %w", triggerType, err)
+		}
+		return t, nil
 	}
 }

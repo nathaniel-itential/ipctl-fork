@@ -40,28 +40,28 @@ type AgentProjectMember struct {
 
 // AgentProject represents an agent project in the agent-project-service.
 type AgentProject struct {
-	Id          string                  `json:"_id"`
-	Iid         int                     `json:"iid"`
-	Name        string                  `json:"name"`
-	Description string                  `json:"description"`
-	Components  []AgentProjectComponent `json:"components"`
-	Created     string                  `json:"created"`
-	CreatedBy   any                     `json:"createdBy"`
-	LastUpdated string                  `json:"lastUpdated"`
-	LastUpdatedBy any                   `json:"lastUpdatedBy"`
-	Members     []AgentProjectMember    `json:"members"`
+	Id            string                  `json:"_id"`
+	Iid           int                     `json:"iid"`
+	Name          string                  `json:"name"`
+	Description   string                  `json:"description"`
+	Components    []AgentProjectComponent `json:"components"`
+	Created       string                  `json:"created"`
+	CreatedBy     any                     `json:"createdBy"`
+	LastUpdated   string                  `json:"lastUpdated"`
+	LastUpdatedBy any                     `json:"lastUpdatedBy"`
+	Members       []AgentProjectMember    `json:"members"`
 }
 
 // AgentProjectBundle represents the export bundle for an agent project.
 // It contains the project metadata along with all agent definitions.
 type AgentProjectBundle struct {
-	Id                       string                 `json:"_id"`
-	Name                     string                 `json:"name"`
-	Description              string                 `json:"description"`
-	AgentProjectBundleVersion int                   `json:"agentProjectBundleVersion"`
-	Created                  string                 `json:"created,omitempty"`
-	CreatedBy                any                    `json:"createdBy,omitempty"`
-	Agents                   []map[string]interface{} `json:"agents"`
+	Id                        string                   `json:"_id"`
+	Name                      string                   `json:"name"`
+	Description               string                   `json:"description"`
+	AgentProjectBundleVersion int                      `json:"agentProjectBundleVersion"`
+	Created                   string                   `json:"created,omitempty"`
+	CreatedBy                 any                      `json:"createdBy,omitempty"`
+	Agents                    []map[string]interface{} `json:"agents"`
 }
 
 // AgentProjectService provides operations for managing agent projects.

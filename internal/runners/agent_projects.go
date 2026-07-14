@@ -115,7 +115,13 @@ func (r *AgentProjectRunner) Import(in Request) (*Response, error) {
 		return nil, err
 	}
 
-	if !common.Replace {
+	// conflictModeExplicit tracks whether the caller explicitly chose a --conflict-mode
+	// (e.g. "keep-both") rather than relying on the --replace-derived default. When explicit,
+	// the pre-import existence check below must be skipped so the server can perform its own
+	// conflict handling (such as server-side duplication for keep-both) on a name collision.
+	conflictModeExplicit := options.ConflictMode != ""
+
+	if !common.Replace && !conflictModeExplicit {
 		existing, err := r.resource.GetByName(bundle.Name)
 		if err == nil && existing != nil {
 			return nil, fmt.Errorf("agent project %q already exists, use --replace to overwrite", bundle.Name)
@@ -142,9 +148,16 @@ func (r *AgentProjectRunner) Import(in Request) (*Response, error) {
 	}
 
 	if err := r.updateMembers(imported.Id, options.Members); err != nil {
-		// Cleanup: delete the partially imported project
-		if delErr := r.resource.Delete(imported.Id); delErr != nil {
-			logging.Error(delErr, "failed to cleanup agent project %s after member update error", imported.Id)
+		// Cleanup: delete the partially imported project. This is only safe when the import
+		// created a brand-new project. In "replace" mode, the import overwrote an existing
+		// project in place, so deleting it would destroy the user's only remaining copy of
+		// their data rather than rolling back a fresh creation.
+		if conflictMode != "replace" {
+			if delErr := r.resource.Delete(imported.Id); delErr != nil {
+				logging.Error(delErr, "failed to cleanup agent project %s after member update error", imported.Id)
+			}
+		} else {
+			logging.Error(err, "member update failed after replacing agent project %s; skipping cleanup delete to avoid destroying the replaced project", imported.Id)
 		}
 		return nil, fmt.Errorf("failed to update agent project members: %w", err)
 	}

@@ -591,14 +591,16 @@ reference = main
 		}(i)
 	}
 
-	// Wait for all goroutines to complete
-	successCount := 0
-	for successCount < numGoroutines {
+	// Wait for all goroutines to complete, counting failures as
+	// completions so a load error cannot deadlock the test
+	completed := 0
+	for completed < numGoroutines {
 		select {
 		case err := <-errCh:
 			t.Errorf("parallel load failed: %v", err)
+			completed++
 		case <-doneCh:
-			successCount++
+			completed++
 		}
 	}
 }

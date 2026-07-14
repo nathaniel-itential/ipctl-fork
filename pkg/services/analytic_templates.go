@@ -31,7 +31,7 @@ type AnalyticTemplateCommand struct {
 type AnalyticTemplate struct {
 	Id              string                    `json:"_id"`
 	Name            string                    `json:"name"`
-	Tags            []string                  `json:"tags"`
+	Tags            []Tag                     `json:"tags"`
 	PassRule        bool                      `json:"passRule"`
 	PrePostCommands []AnalyticTemplateCommand `json:"prepostCommands"`
 	Created         int                       `json:"created"`
@@ -53,6 +53,7 @@ func NewAnalyticTemplate(name string) AnalyticTemplate {
 	return AnalyticTemplate{
 		Id:   name,
 		Name: name,
+		Tags: []Tag{},
 		PrePostCommands: []AnalyticTemplateCommand{
 			AnalyticTemplateCommand{
 				PassRule: true,

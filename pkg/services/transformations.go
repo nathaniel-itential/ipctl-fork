@@ -31,7 +31,7 @@ type Transformation struct {
 	Created     string                   `json:"created,omitempty"`
 	LastUpdated string                   `json:"lastUpdated,omitempty"`
 	Version     string                   `json:"version,omitempty"`
-	Tags        []string                 `json:"tags"`
+	Tags        []Tag                    `json:"tags"`
 }
 
 type TransformationService struct {
@@ -48,7 +48,7 @@ func NewTransformation(name, description string) Transformation {
 		Incoming:    []map[string]interface{}{},
 		Outgoing:    []map[string]interface{}{},
 		Steps:       []map[string]interface{}{},
-		Tags:        []string{},
+		Tags:        []Tag{},
 		View:        TransformationView{Col: 3, Row: 5},
 	}
 }

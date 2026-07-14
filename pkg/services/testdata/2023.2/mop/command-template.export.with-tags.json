@@ -1,0 +1,24 @@
+{
+  "tags": [{"_id": "6800fb9af7a998b975bde8e5", "name": "Netbox-Utils", "description": "All assets related to managing Netbox integration"}],
+  "name": "test",
+  "os": "",
+  "passRule": false,
+  "ignoreWarnings": false,
+  "commands": [
+    {
+      "command": "",
+      "passRule": true,
+      "rules": [
+        {
+          "rule": "",
+          "eval": "contains",
+          "severity": "error"
+        }
+      ]
+    }
+  ],
+  "created": 1737921835182,
+  "createdBy": "",
+  "lastUpdated": 1737921835182,
+  "lastUpdatedBy": ""
+}

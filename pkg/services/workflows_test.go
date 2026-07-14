@@ -16,16 +16,16 @@ import (
 )
 
 var (
-	workflowsGetSuccess          = "automation-studio/workflows/get.success.json"
-	workflowsGetAllSuccess       = "automation-studio/workflows/getall.success.json"
-	workflowsDeleteSuccess       = "automation-studio/workflows/delete.success.json"
-	workflowsDeleteNotFound      = "automation-studio/workflows/delete.notfound.json"
-	workflowsCreateSuccess       = "automation-studio/automations/create.success.json"
-	workflowsExportSuccess       = "workflow_builder/export/export.success.json"
-	workflowsExportWithTags      = "workflow_builder/export/export.with-tags.success.json"
-	workflowsImportSuccess       = "automation-studio/automations/import.success.json"
+	workflowsGetSuccess            = "automation-studio/workflows/get.success.json"
+	workflowsGetAllSuccess         = "automation-studio/workflows/getall.success.json"
+	workflowsDeleteSuccess         = "automation-studio/workflows/delete.success.json"
+	workflowsDeleteNotFound        = "automation-studio/workflows/delete.notfound.json"
+	workflowsCreateSuccess         = "automation-studio/automations/create.success.json"
+	workflowsExportSuccess         = "workflow_builder/export/export.success.json"
+	workflowsExportWithTags        = "workflow_builder/export/export.with-tags.success.json"
+	workflowsImportSuccess         = "automation-studio/automations/import.success.json"
 	workflowsImportWithTagsSuccess = "automation-studio/automations/import.with-tags.success.json"
-	workflowsImportError         = "automation-studio/automations/import.error.json"
+	workflowsImportError           = "automation-studio/automations/import.error.json"
 )
 
 func setupWorkflowService() *WorkflowService {

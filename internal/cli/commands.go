@@ -90,6 +90,7 @@ func makeChildCommand(root RootCommand, desc map[string]cmdutils.Descriptor) *co
 			&cobra.Group{ID: "configuration-manager", Title: "Configuration Manager Commands:"},
 			&cobra.Group{ID: "operations-manager", Title: "Operations Manager Commands:"},
 			&cobra.Group{ID: "lifecycle-manager", Title: "Lifecycle Manager Commands:"},
+			&cobra.Group{ID: "flow-agent", Title: "Flow Agent Commands:"},
 		)
 	}
 

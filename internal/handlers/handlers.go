@@ -140,6 +140,9 @@ func NewHandler(rt *Runtime) Handler {
 		// Lifecycle Manager handlers
 		NewModelHandler(rt, descriptors),
 
+		// Flow Agent handlers
+		NewAgentProjectHandler(rt, descriptors),
+
 		NewServerHandler(rt, descriptors),
 	}
 

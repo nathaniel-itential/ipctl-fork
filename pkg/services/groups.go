@@ -103,6 +103,8 @@ func (svc *GroupService) Get(id string) (*Group, error) {
 
 // GetByName retrieves a group by name using client-side filtering.
 // DEPRECATED: Business logic method - prefer using resources.GroupResource.GetByName
+// When multiple groups share the same name, an active group is preferred
+// over an inactive one.
 func (svc *GroupService) GetByName(name string) (*Group, error) {
 	logging.Trace()
 
@@ -111,10 +113,22 @@ func (svc *GroupService) GetByName(name string) (*Group, error) {
 		return nil, err
 	}
 
+	var inactiveMatch *Group
+
 	for i := range groups {
 		if groups[i].Name == name {
-			return &groups[i], nil
+			if !groups[i].Inactive {
+				return &groups[i], nil
+			}
+
+			if inactiveMatch == nil {
+				inactiveMatch = &groups[i]
+			}
 		}
+	}
+
+	if inactiveMatch != nil {
+		return inactiveMatch, nil
 	}
 
 	return nil, errors.New("group does not exist")

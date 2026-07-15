@@ -276,6 +276,18 @@ type TriggerServicer interface {
 	Delete(id string) error
 }
 
+// AgentProjectServicer defines operations for managing agent projects.
+// It handles retrieval and import/export of agent project bundles.
+type AgentProjectServicer interface {
+	GetAll() ([]AgentProject, error)
+	Get(id string) (*AgentProject, error)
+	GetByName(name string) (*AgentProject, error)
+	Export(id string) (*AgentProjectBundle, error)
+	Import(bundle AgentProjectBundle, conflictMode string) (*AgentProjectBundle, error)
+	UpdateProject(projectId string, data map[string]interface{}) error
+	Delete(id string) error
+}
+
 // WorkflowServicer defines operations for managing workflow assets.
 // It handles CRUD operations, import/export, and workflow execution.
 type WorkflowServicer interface {

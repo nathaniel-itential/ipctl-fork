@@ -1,0 +1,75 @@
+# Copyright 2025 Itential Inc. All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly prohibited
+# Proprietary and confidential
+---
+get:
+  use: agent-projects
+  group: flow-agent
+
+  description: |
+    Display one or more agent projects.
+
+    The `get agent-projects` command will retrieve all configured agent projects
+    from the FlowAI server and display them in table format by default.  If
+    there are no configured agent projects, the command will return an empty table.
+
+  example: |
+    # Display all configured agent projects
+    $ ipctl get agent-projects
+
+describe:
+  use: agent-project <name>
+  group: flow-agent
+
+  description: |
+    Display details about an agent project.
+
+    The `describe agent-project <name>` command will retrieve the specified
+    agent project from the FlowAI server, if it exists, and display it.
+    If the specified agent project does not exist, this command will return
+    an error.
+
+  example: |
+    # Display details about an agent project called `my-agents`
+    $ ipctl describe agent-project "my-agents"
+
+import:
+  use: agent-project <path>
+  group: flow-agent
+
+  description: |
+    Import an agent project.
+
+    The `import agent-project` command will import an agent project bundle
+    into the FlowAI service.  The path argument must point to a JSON file
+    containing an exported agent project bundle.
+
+    If an agent project with the same name already exists on the server,
+    this command will return an error.
+
+  example: |
+    # Import an agent project from a file
+    $ ipctl import agent-project path/to/my-agents.agent-project.json
+
+export:
+  use: agent-project <name>
+  group: flow-agent
+
+  exact_args: 1
+
+  description: |
+    Export an agent project.
+
+    The `export agent-project <name>` command will export the specified agent
+    project bundle from the FlowAI service.  The exported bundle is saved as
+    a JSON file named after the project.
+
+    If a `--path` or `--repository` option is provided, the file will be
+    written to the specified location or committed to the Git repository.
+
+  example: |
+    # Export an agent project to the current directory
+    $ ipctl export agent-project "my-agents"
+
+    # Export an agent project to a specific directory
+    $ ipctl export agent-project "my-agents" --path /tmp/exports

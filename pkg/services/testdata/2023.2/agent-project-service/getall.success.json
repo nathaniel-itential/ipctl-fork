@@ -1,0 +1,53 @@
+{
+  "message": "Successfully retrieved agent projects",
+  "data": {
+    "items": [
+      {
+        "_id": "6a1bc2d3e4f0123456789001",
+        "iid": 1,
+        "name": "test-agent-project-1",
+        "description": "First test agent project",
+        "components": [
+          {
+            "type": "agent",
+            "iid": 1,
+            "reference": "agent-ref-1",
+            "folder": "/"
+          }
+        ],
+        "created": "2023-09-01T12:00:00.000Z",
+        "createdBy": {
+          "_id": "user123",
+          "username": "testuser"
+        },
+        "lastUpdated": "2023-09-01T12:00:00.000Z",
+        "lastUpdatedBy": {
+          "_id": "user123",
+          "username": "testuser"
+        },
+        "members": []
+      },
+      {
+        "_id": "6a1bc2d3e4f0123456789002",
+        "iid": 2,
+        "name": "test-agent-project-2",
+        "description": "Second test agent project",
+        "components": [],
+        "created": "2023-09-02T12:00:00.000Z",
+        "createdBy": {
+          "_id": "user456",
+          "username": "anotheruser"
+        },
+        "lastUpdated": "2023-09-02T12:00:00.000Z",
+        "lastUpdatedBy": {
+          "_id": "user456",
+          "username": "anotheruser"
+        },
+        "members": []
+      }
+    ],
+    "total": 2,
+    "skip": 0,
+    "limit": 100
+  }
+}

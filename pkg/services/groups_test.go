@@ -105,6 +105,44 @@ func TestGroupGetByName(t *testing.T) {
 	}
 }
 
+func TestGroupGetByNamePrefersActive(t *testing.T) {
+	svc := setupGroupService()
+	defer testlib.Teardown()
+
+	mockResponse := `{
+		"results": [
+			{
+				"_id": "inactive-id-1",
+				"provenance": "local_aaa",
+				"name": "duplicate_group",
+				"description": "Inactive duplicate",
+				"memberOf": [],
+				"assignedRoles": [],
+				"inactive": true
+			},
+			{
+				"_id": "active-id",
+				"provenance": "local_aaa",
+				"name": "duplicate_group",
+				"description": "Active duplicate",
+				"memberOf": [],
+				"assignedRoles": [],
+				"inactive": false
+			}
+		],
+		"total": 2
+	}`
+
+	testlib.AddGetResponseToMux("/authorization/groups", mockResponse, 0)
+
+	res, err := svc.GetByName("duplicate_group")
+
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, "active-id", res.Id)
+	assert.False(t, res.Inactive)
+}
+
 func TestGroupGetByNameError(t *testing.T) {
 	svc := setupGroupService()
 	defer testlib.Teardown()

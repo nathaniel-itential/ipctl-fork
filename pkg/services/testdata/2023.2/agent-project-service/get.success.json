@@ -1,0 +1,28 @@
+{
+  "message": "Successfully retrieved agent project",
+  "data": {
+    "_id": "6a1bc2d3e4f0123456789001",
+    "iid": 1,
+    "name": "test-agent-project-1",
+    "description": "First test agent project",
+    "components": [
+      {
+        "type": "agent",
+        "iid": 1,
+        "reference": "agent-ref-1",
+        "folder": "/"
+      }
+    ],
+    "created": "2023-09-01T12:00:00.000Z",
+    "createdBy": {
+      "_id": "user123",
+      "username": "testuser"
+    },
+    "lastUpdated": "2023-09-01T12:00:00.000Z",
+    "lastUpdatedBy": {
+      "_id": "user123",
+      "username": "testuser"
+    },
+    "members": []
+  }
+}

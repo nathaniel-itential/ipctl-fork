@@ -33,6 +33,87 @@ describe:
     # Display details about an agent project called `my-agents`
     $ ipctl describe agent-project "my-agents"
 
+create:
+  use: agent-project <name>
+  group: flow-agent
+
+  description: |
+    Create a new agent project.
+
+    The `create agent-project` command will create a new empty agent project
+    with the specified name on the server. An optional description can be
+    provided via the `--description` flag. If an agent project with the same
+    name already exists, this command will return an error.
+
+  example: |
+    # Create a new agent project
+    $ ipctl create agent-project "my agent project"
+
+    # Create a new agent project with a description
+    $ ipctl create agent-project "my agent project" --description "A project for my agents"
+
+delete:
+  use: agent-project <name>
+  group: flow-agent
+
+  description: |
+    Delete an agent project.
+
+    Use the `delete agent-project` command to delete an existing agent project
+    from the server. If the specified agent project does not exist on the
+    server, this command will return an error.
+
+  example: |
+    # Delete an agent project named `my agent project`
+    $ ipctl delete agent-project "my agent project"
+
+copy:
+  use: agent-project <name> --from <profile> --to <profile>
+  group: flow-agent
+
+  description: |
+    Copy an agent project from one server to another.
+
+    The copy command can be used to copy an agent project from one Itential
+    Platform server to another.
+
+    The `name` argument specifies the agent project name to copy from the
+    source server to the target. If it does not exist on the source server,
+    the command will return an error.
+
+    The command has two required options, `--from` and `--to`. The `--from`
+    option specifies the name of the ipctl profile that points to the server
+    to copy from. The `--to` option specifies the name of the ipctl profile
+    that points to the server to copy to.
+
+    When the copy operation is performed, the destination server is first
+    checked to see if the agent project already exists. If it does exist,
+    the copy operation will return an error unless `--replace` is specified.
+
+    All member privileges are removed from the project on copy. Use the
+    `--member` option to set permissions on the destination server.
+
+  example: |
+    # Copy an agent project from `ipctl-dev` to `ipctl-staging`
+    $ ipctl copy agent-project "my agent project" --from ipctl-dev --to ipctl-staging
+
+    # Copy and set the group `admins` as owner
+    $ ipctl copy agent-project "my agent project" --from ipctl-dev --to ipctl-staging --member type=group,name=admins,access=owner
+
+clear:
+  use: agent-projects
+  group: flow-agent
+
+  description: |
+    Delete all configured agent projects.
+
+    The `clear agent-projects` command will delete all configured agent projects
+    from the server. This is a destructive command and cannot be undone.
+
+  example: |
+    # Delete all agent projects from the server
+    $ ipctl clear agent-projects
+
 import:
   use: agent-project <path>
   group: flow-agent

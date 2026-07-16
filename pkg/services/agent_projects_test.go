@@ -17,6 +17,7 @@ import (
 var (
 	agentProjectsGetAllSuccess = "agent-project-service/getall.success.json"
 	agentProjectsGetSuccess    = "agent-project-service/get.success.json"
+	agentProjectsCreateSuccess = "agent-project-service/create.success.json"
 	agentProjectsExportSuccess = "agent-project-service/export.success.json"
 	agentProjectsImportSuccess = "agent-project-service/import.success.json"
 )
@@ -222,4 +223,43 @@ func TestAgentProjectService_Import_Error(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
+}
+
+func TestAgentProjectService_Create(t *testing.T) {
+	svc := setupAgentProjectService()
+	defer testlib.Teardown()
+
+	for _, suite := range fixtureSuites {
+		response := testlib.Fixture(filepath.Join(fixtureRoot, suite, agentProjectsCreateSuccess))
+		testlib.AddPostResponseToMux("/agent-project-service/projects", response, http.StatusOK)
+
+		res, err := svc.Create("Test Agent Project", "A test agent project")
+
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		assert.Equal(t, "Test Agent Project", res.Name)
+	}
+}
+
+func TestAgentProjectService_Create_Error(t *testing.T) {
+	svc := setupAgentProjectService()
+	defer testlib.Teardown()
+
+	testlib.AddPostErrorToMux("/agent-project-service/projects", "", 0)
+
+	res, err := svc.Create("Test Agent Project", "A test agent project")
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestAgentProjectService_Create_EmptyName(t *testing.T) {
+	svc := setupAgentProjectService()
+	defer testlib.Teardown()
+
+	res, err := svc.Create("", "A test agent project")
+
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+	assert.Contains(t, err.Error(), "name cannot be empty")
 }

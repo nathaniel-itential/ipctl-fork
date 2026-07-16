@@ -49,8 +49,12 @@ func (r *AgentProjectResource) Import(bundle services.AgentProjectBundle, confli
 	return r.service.Import(bundle, conflictMode)
 }
 
+// Create creates a new agent project with the specified name and description.
+func (r *AgentProjectResource) Create(name string, description string) (*services.AgentProject, error) {
+	return r.service.Create(name, description)
+}
+
 // Delete removes an agent project by its identifier.
-// This is a pass-through to the service layer for pure API access.
 func (r *AgentProjectResource) Delete(id string) error {
 	return r.service.Delete(id)
 }

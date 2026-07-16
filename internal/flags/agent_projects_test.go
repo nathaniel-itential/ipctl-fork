@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAgentProjectCreateOptions_Flags(t *testing.T) {
+	checkFlags(t, &AgentProjectCreateOptions{}, []string{"description"})
+}
+
 func TestAgentProjectImportOptions_Flags(t *testing.T) {
 	checkFlags(t, &AgentProjectImportOptions{}, []string{"member"})
 }
@@ -20,4 +24,8 @@ func TestAgentProjectExportOptions_Flags(t *testing.T) {
 	cmd := &cobra.Command{}
 	opts.Flags(cmd)
 	assert.NotNil(t, opts)
+}
+
+func TestAgentProjectCopyOptions_Flags(t *testing.T) {
+	checkFlags(t, &AgentProjectCopyOptions{}, []string{"member"})
 }

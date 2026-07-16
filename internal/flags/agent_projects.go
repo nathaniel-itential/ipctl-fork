@@ -6,6 +6,15 @@ package flags
 
 import "github.com/spf13/cobra"
 
+// AgentProjectCreateOptions holds options for the `create agent-project` command.
+type AgentProjectCreateOptions struct {
+	Description string
+}
+
+func (o *AgentProjectCreateOptions) Flags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&o.Description, "description", o.Description, "Description for the agent project (optional)")
+}
+
 // AgentProjectImportOptions holds options for the `import agent-project` command.
 type AgentProjectImportOptions struct {
 	Members      []string
@@ -23,3 +32,12 @@ func (o *AgentProjectImportOptions) Flags(cmd *cobra.Command) {
 type AgentProjectExportOptions struct{}
 
 func (o *AgentProjectExportOptions) Flags(_ *cobra.Command) {}
+
+// AgentProjectCopyOptions holds options for the `copy agent-project` command.
+type AgentProjectCopyOptions struct {
+	Members []string
+}
+
+func (o *AgentProjectCopyOptions) Flags(cmd *cobra.Command) {
+	cmd.Flags().StringArrayVar(&o.Members, "member", o.Members, "Configure one or more agent project members")
+}

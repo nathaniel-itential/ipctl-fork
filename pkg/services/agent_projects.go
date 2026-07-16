@@ -287,3 +287,34 @@ func (svc *AgentProjectService) Import(bundle AgentProjectBundle, conflictMode s
 
 	return &res.Data, nil
 }
+
+// Create creates a new agent project with the specified name and description.
+func (svc *AgentProjectService) Create(name string, description string) (*AgentProject, error) {
+	logging.Trace()
+
+	if name == "" {
+		return nil, fmt.Errorf("agent project name cannot be empty")
+	}
+
+	body := map[string]interface{}{
+		"name":        name,
+		"description": description,
+	}
+
+	type createResponse struct {
+		Message string       `json:"message"`
+		Data    AgentProject `json:"data"`
+	}
+
+	var res createResponse
+
+	if err := svc.PostRequest(&Request{
+		uri:                agentProjectsBasePath,
+		body:               body,
+		expectedStatusCode: http.StatusOK,
+	}, &res); err != nil {
+		return nil, fmt.Errorf("failed to create agent project '%s': %w", name, err)
+	}
+
+	return &res.Data, nil
+}

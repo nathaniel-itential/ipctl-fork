@@ -11,6 +11,7 @@ type AgentProjectResourcer interface {
 	GetAll() ([]services.AgentProject, error)
 	Get(id string) (*services.AgentProject, error)
 	GetByName(name string) (*services.AgentProject, error)
+	Create(name string, description string) (*services.AgentProject, error)
 	Export(id string) (*services.AgentProjectBundle, error)
 	Import(bundle services.AgentProjectBundle, conflictMode string) (*services.AgentProjectBundle, error)
 	AddMembers(projectId string, members []services.AgentProjectMember) error

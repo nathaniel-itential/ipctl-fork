@@ -14,8 +14,10 @@ func NewAgentProjectHandler(rt *Runtime, desc Descriptors) AssetHandler {
 		runners.NewAgentProjectRunner(rt.GetClient(), rt.GetConfig()),
 		desc[agentProjectsDescriptor],
 		&AssetHandlerFlags{
+			Create: &flags.AgentProjectCreateOptions{},
 			Import: &flags.AgentProjectImportOptions{},
 			Export: &flags.AgentProjectExportOptions{},
+			Copy:   &flags.AgentProjectCopyOptions{},
 		},
 	)
 }

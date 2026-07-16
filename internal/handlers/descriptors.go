@@ -41,6 +41,7 @@ const (
 	transformationsDescriptor   = "transformations"
 	jsonformsDescriptor         = "jsonforms"
 	projectsDescriptor          = "projects"
+	agentProjectsDescriptor     = "agent_projects"
 	analyticTemplatesDescriptor = "analytic_templates"
 	templatesDescriptor         = "templates"
 
@@ -48,8 +49,6 @@ const (
 	deviceGroupsDescriptor         = "devicegroups"
 	configurationParsersDescriptor = "configuration_parsers"
 	gctreesDescriptor              = "gctrees"
-
-	agentProjectsDescriptor = "agent_projects"
 
 	serverDescriptor = "server"
 

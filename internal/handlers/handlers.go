@@ -105,7 +105,6 @@ func NewHandler(rt *Runtime) Handler {
 	handlerInstances := []any{
 		// Automation Studio handlers
 		NewProjectHandler(rt, descriptors),
-		NewAgentProjectHandler(rt, descriptors),
 		NewWorkflowHandler(rt, descriptors),
 		NewTransformationHandler(rt, descriptors),
 		NewJsonFormHandler(rt, descriptors),

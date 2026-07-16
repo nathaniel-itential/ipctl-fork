@@ -17,7 +17,7 @@ import (
 var (
 	agentProjectsGetAllSuccess = "agent-project-service/getall.success.json"
 	agentProjectsGetSuccess    = "agent-project-service/get.success.json"
-	agentProjectsCreateSuccess = "agent-projects/create.success.json"
+	agentProjectsCreateSuccess = "agent-project-service/create.success.json"
 	agentProjectsExportSuccess = "agent-project-service/export.success.json"
 	agentProjectsImportSuccess = "agent-project-service/import.success.json"
 )

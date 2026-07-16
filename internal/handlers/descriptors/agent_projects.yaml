@@ -35,7 +35,7 @@ describe:
 
 create:
   use: agent-project <name>
-  group: agent-projects
+  group: flow-agent
 
   description: |
     Create a new agent project.
@@ -54,7 +54,7 @@ create:
 
 delete:
   use: agent-project <name>
-  group: agent-projects
+  group: flow-agent
 
   description: |
     Delete an agent project.
@@ -69,7 +69,7 @@ delete:
 
 copy:
   use: agent-project <name> --from <profile> --to <profile>
-  group: agent-projects
+  group: flow-agent
 
   description: |
     Copy an agent project from one server to another.
@@ -102,7 +102,7 @@ copy:
 
 clear:
   use: agent-projects
-  group: agent-projects
+  group: flow-agent
 
   description: |
     Delete all configured agent projects.

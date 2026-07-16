@@ -87,7 +87,6 @@ func makeChildCommand(root RootCommand, desc map[string]cmdutils.Descriptor) *co
 		cmd.AddGroup(
 			&cobra.Group{ID: "admin-essentials", Title: "Admin Essentials Commands:"},
 			&cobra.Group{ID: "automation-studio", Title: "Automation Studio Commands:"},
-			&cobra.Group{ID: "agent-projects", Title: "Agent Project Commands:"},
 			&cobra.Group{ID: "configuration-manager", Title: "Configuration Manager Commands:"},
 			&cobra.Group{ID: "operations-manager", Title: "Operations Manager Commands:"},
 			&cobra.Group{ID: "lifecycle-manager", Title: "Lifecycle Manager Commands:"},

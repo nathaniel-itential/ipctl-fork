@@ -61,8 +61,8 @@ changelog:
 brews:
  - name: ipctl
    repository:
-     owner: itential
-     name: homebrew-tap
+     owner: nathaniel-itential
+     name: homebrew-tap-test
      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
    directory: Formula
    homepage: https://github.com/itential/ipctl

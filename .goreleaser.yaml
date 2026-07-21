@@ -58,17 +58,14 @@ changelog:
       - Merge remote-tracking branch
       - Merge branch
 
-brews:
+homebrew_casks:
  - name: ipctl
+   binaries:
+     - ipctl
    repository:
      owner: nathaniel-itential
      name: homebrew-tap-test
      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-   directory: Formula
+   directory: Casks
    homepage: https://github.com/itential/ipctl
    description: "A powerful command-line interface for managing Itential Platform servers"
-   license: Proprietary
-   install: |
-     bin.install "ipctl"
-   test: |
-     system "#{bin}/ipctl", "--version"
